@@ -168,6 +168,11 @@ if(STRATA_HIP_GFX906)
   # duplicate symbols. The copies are identical: let the linker keep one. HIP 6 and later fixed the header; nothing changes there.
   if(WIN32 AND hip_VERSION VERSION_LESS 6)
     add_link_options(LINKER:/FORCE:MULTIPLE)
+    # 2026-10-23 strata-mi50: with the new launch API (clang's default) the HIP 5.x runtime on Windows crashes inside hipLaunchKernel
+    # (0xC0000005) for some kernels - first seen on sampler_greedy_kernel at the first request; a minimal repro reproduces it without
+    # graphs, and the same kernel runs through hipModuleLaunchKernel. The old launch API (hipConfigureCall / hipSetupArgument /
+    # hipLaunchByPtr) does not crash. Only this build: other builds keep clang's default.
+    add_compile_options($<$<COMPILE_LANGUAGE:HIP>:-fno-hip-new-launch-api>)
     message(STATUS "Strata: HIP ${hip_VERSION} on Windows, linking with /FORCE:MULTIPLE (amd_hip_bf16.h duplicates)")
   endif()
   set(_strata_gpu_runtime_target CUDA::cudart)

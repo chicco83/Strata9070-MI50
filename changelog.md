@@ -1,4 +1,16 @@
-# changelog.md — versione 0.2.2-mi50.7 (2026-10-23 12:30)
+# changelog.md — versione 0.2.2-mi50.8 (2026-10-23 13:35)
+
+## 0.2.2-mi50.8 — 2026-10-23 13:35
+- ✅ PRIMA RISPOSTA DEL MODELLO SULLA RADEON PRO VII (MI50, gfx906) SU WINDOWS: Qwen3.8-Flash-Next IQ3_S, server di prova sulla porta 8081,
+  risposta corretta in italiano. 68 token di prompt in 4,4 s (15,3 tok/s), 283 generati in 26,2 s (10,8 tok/s), bozze accettate 142/246.
+- Causa del crash (0xC0000005 in hipLaunchKernel): la nuova API di lancio di clang con il runtime HIP 5.x su Windows. Con
+  `-fno-hip-new-launch-api` (vecchia API: hipConfigureCall / hipSetupArgument / hipLaunchByPtr) non va in crash. Aggiunto in
+  `CMakeLists.txt` solo per la build gfx906 con HIP < 6 su Windows. Il meccanismo esatto nel runtime resta sconosciuto: il crash
+  dipendeva dalla presenza di `sample_tokens` nel file (bisezione), non dal kernel (che via hipModuleLaunchKernel gira).
+- Ipotesi scartate in questa sessione: namespace anonimo (anche con nome va in crash), code folding del linker (/OPT:NOICF),
+  ottimizzazioni (-O0), runtime 10.0.3592 (con le sue dipendenze non si carica isolato).
+- Velocità limitata dal PCIe misurato a 6,6 GB/s e dalle letture da disco (19-26 GB di esperti letti dai file per richiesta):
+  da indagare (slot x8 secondo l'utente; Windows riporta Gen4 x16).
 
 ## 0.2.2-mi50.7 — 2026-10-23 12:30
 - Prova sulla Pro VII: l'engine gfx906 CARICA il modello IQ3_S (6,69 GiB esperti in VRAM, 27,65 GiB in RAM, "ready") ma alla prima
