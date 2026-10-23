@@ -1,4 +1,8 @@
-# changelog.md — versione 0.2.2-mi50.10 (2026-10-23 15:10)
+# changelog.md — versione 0.2.2-mi50.11 (2026-10-23 16:00)
+
+## 0.2.2-mi50.11 — 2026-10-23 16:00
+- context.md riscritto come punto di ripresa (stato, fatti verificati, percorsi, prossimi passi). Script di build copiati in
+  `C:\src\scripts` (fuori dal repo). File di paging 65536 MB su NVMe impostato dall utente: attivo dopo il riavvio.
 
 ## 0.2.2-mi50.10 — 2026-10-23 15:10
 - Limite di commit alzato dall'utente (file di paging: C: 33,8 GB + E: 9 GB, limite 105,5 GiB, 59,8 GiB liberi). Con lo stesso budget
