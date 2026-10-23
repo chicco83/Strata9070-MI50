@@ -1,4 +1,15 @@
-# changelog.md — versione 0.2.2-mi50.4 (2026-10-23 09:30)
+# changelog.md — versione 0.2.2-mi50.5 (2026-10-23 10:30)
+
+## 0.2.2-mi50.5 — 2026-10-23 10:30
+- CORREZIONE alla 0.2.2-mi50.4: la MI50/Pro VII È utilizzabile su Windows con il runtime HIP 5.x. I driver installati portano
+  più runtime: `amdhip64.dll` (5.x, file 10.0.3584 / 10.0.3592, anche in System32) elenca la Radeon Pro VII (16,0 GB);
+  `amdhip64_6.dll` e `amdhip64_7.dll` (6.x/7.x) elencano solo la RX 9070 XT. Nessun runtime le vede entrambe.
+- Prova eseguita: kernel gfx906 compilato con il clang del HIP SDK 6.4 (`--offload-arch=gfx906 --cuda-device-only`, code object v4 e v5)
+  caricato con `hipModuleLoadData` ed eseguito sulla Pro VII attraverso `C:\Windows\System32\amdhip64.dll`: 1.052 valori controllati, 0 errati.
+- Conseguenza: un engine gfx906 per Windows va compilato e collegato contro HIP 5.x (HIP SDK 5.7.1, ultimo con gfx906 supportato),
+  non contro il 6.4. Sarà un processo separato da quello della 9070: un modello non può stare diviso tra le due schede (nessun runtime
+  le vede insieme). Uso realistico: un secondo modello/istanza sulla MI50.
+- Mancano sul PC: Visual Studio 2022 Build Tools (C++), CMake, Ninja, HIP SDK 5.7.1, sorgenti llama.cpp al commit fissato da setup.py.
 
 ## 0.2.2-mi50.4 — 2026-10-23 09:30
 - PR del fix del wizard sul repo principale: https://github.com/Niko1221/Strata/pull/3798 (solo `OnboardingMemory.tsx`, senza i documenti del fork).
