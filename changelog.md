@@ -2,7 +2,7 @@
 
 ## 0.2.2-mi50.9 — 2026-10-23 14:30
 - ✅ UN MODELLO SULLE DUE SCHEDE (RX 9070 XT + Radeon Pro VII / MI50) su Windows, nello stesso processo con due runtime HIP:
-  engine wave32 gfx1201 (HIP SDK 6.4, `C:\src1201`) + plugin `strata_helper_gfx906.dll` (HIP 5.x, `C:\src906c`) con
+  engine wave32 gfx1201 (HIP SDK 6.4, `C:\src\b1201`) + plugin `strata_helper_gfx906.dll` (HIP 5.x, `C:\src\b906c`) con
   `--expert-cache-device1 auto --expert-cache-plugin <dll>`. La MI50 tiene 8.120 esperti (15,36 GiB) e li calcola lei; risposta corretta.
 - Codice: `include/strata/core/helper_plugin_abi.h` (API C), `src/plugin/helper_plugin.cpp` (plugin), `RemoteExperts::open_with` e
   inoltro al plugin in `src/core/remote_experts.cpp`, opzione `--expert-cache-plugin` in `src/program/generate.cpp`, target CMake

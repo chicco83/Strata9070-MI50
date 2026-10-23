@@ -13,6 +13,6 @@ Build: `powershell -ExecutionPolicy Bypass -File packaging\build_hip_gfx906_wind
 Avvio: con `C:\Program Files\AMD\ROCm\5.7\bin` nel PATH (hipblas.dll, rocblas.dll); il runtime `amdhip64.dll` è quello del driver in System32.
 
 ## Due schede per un modello (RX 9070 XT + MI50)
-Engine della 9070 da `C:\src1201` con `C:\Program Files\AMD\ROCm.4in` nel PATH, più gli argomenti
-`--expert-cache-device1 auto --expert-cache-plugin C:\src906c\strata_helper_gfx906.dll`. Prova: `C:\src9070-testench.py`.
+Engine della 9070 da `C:\src\b1201` con `C:\Program Files\AMD\ROCm\6.4\bin` nel PATH, più gli argomenti
+`--expert-cache-device1 auto --expert-cache-plugin C:\src\b906c\strata_helper_gfx906.dll`. Prova: `C:\src9070-test\bench.py`.
 Serve commit di sistema libero quanto la VRAM usata (vedi changelog 0.2.2-mi50.9): file di paging grande.
