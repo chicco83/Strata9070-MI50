@@ -1,4 +1,24 @@
-# changelog.md — versione 0.2.2-mi50.8 (2026-10-23 13:35)
+# changelog.md — versione 0.2.2-mi50.9 (2026-10-23 14:30)
+
+## 0.2.2-mi50.9 — 2026-10-23 14:30
+- ✅ UN MODELLO SULLE DUE SCHEDE (RX 9070 XT + Radeon Pro VII / MI50) su Windows, nello stesso processo con due runtime HIP:
+  engine wave32 gfx1201 (HIP SDK 6.4, `C:\src1201`) + plugin `strata_helper_gfx906.dll` (HIP 5.x, `C:\src906c`) con
+  `--expert-cache-device1 auto --expert-cache-plugin <dll>`. La MI50 tiene 8.120 esperti (15,36 GiB) e li calcola lei; risposta corretta.
+- Codice: `include/strata/core/helper_plugin_abi.h` (API C), `src/plugin/helper_plugin.cpp` (plugin), `RemoteExperts::open_with` e
+  inoltro al plugin in `src/core/remote_experts.cpp`, opzione `--expert-cache-plugin` in `src/program/generate.cpp`, target CMake
+  `strata_helper_gfx906` (solo build gfx906 su Windows). Attesa attiva (spin) della MI50 anche nella build gfx906.
+- Misure (stessa richiesta, 68 token di prompt, greedy):
+  | configurazione | RAM copia esperti | decode |
+  |---|---|---|
+  | engine ufficiale, sola 9070 | 2,84 GiB VRAM + RAM | 10,8 tok/s |
+  | mio engine, sola 9070 | 20,27 GiB RAM | 10,9 tok/s |
+  | 9070 + MI50 (plugin) | 7,64 GiB RAM | 7,0 tok/s |
+  | 9070 + MI50, margine RAM 6 GiB (test) | 12,95 GiB RAM | 8,4 tok/s |
+- Vincolo trovato: su Windows ogni allocazione in VRAM costa altrettanto commit di sistema (8 GiB hipMalloc -> +8,25 GiB commit, entrambi
+  i runtime) senza usare RAM fisica. Con ~50 GiB di commit già usati da altri programmi e limite 96,7 GiB, l'engine riduce la copia in RAM.
+  Rimedio (utente): file di paging più grande; chiudere i programmi che occupano ~30 GB di RAM.
+- Collo di bottiglia attuale: attesa della MI50 per strato (~0,55 ms per lancio, 3,2 s su una risposta) e ~15 GiB di esperti letti dal disco.
+- Anche (fase 1): l'engine wave32 si compila con HIP SDK 6.4 (hipBLAS 2.x con HIPBLAS_V2, `__ldg` int32, hipKernelNameRefByPtr a runtime).
 
 ## 0.2.2-mi50.8 — 2026-10-23 13:35
 - ✅ PRIMA RISPOSTA DEL MODELLO SULLA RADEON PRO VII (MI50, gfx906) SU WINDOWS: Qwen3.8-Flash-Next IQ3_S, server di prova sulla porta 8081,

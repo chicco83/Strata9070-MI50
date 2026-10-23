@@ -744,6 +744,13 @@ if(STRATA_ENABLE_CUDA OR STRATA_ENABLE_HIP)
     target_link_libraries(tune_rocblas PRIVATE hip::host roc::rocblas)
   endif()
 
+  # strata-mi50 (2026-10-23): the helper-GPU expert tier as a DLL for an engine on another HIP runtime (PIANO_DUAL_GPU_2026-10-23.md,
+  # include/strata/core/helper_plugin_abi.h).  Only the Windows gfx906 build: the Radeon Pro VII / MI50 is seen there only by HIP 5.x.
+  if(STRATA_HIP_GFX906 AND WIN32)
+    add_library(strata_helper_gfx906 SHARED src/plugin/helper_plugin.cpp)
+    target_include_directories(strata_helper_gfx906 PRIVATE ${_strata_gpu_include_directories})
+    target_link_libraries(strata_helper_gfx906 PRIVATE strata_engine ${_strata_gpu_runtime_target})
+  endif()
   add_executable(strata src/program/generate.cpp)
   strata_utf8_manifest(strata)
   target_include_directories(strata PRIVATE ${_strata_gpu_include_directories})

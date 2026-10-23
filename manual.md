@@ -1,4 +1,4 @@
-# manual.md — versione 0.2.2-mi50.8 (2026-10-23 13:35)
+# manual.md — versione 0.2.2-mi50.9 (2026-10-23 14:30)
 
 Per riaprire il wizard: scrivere `/setup` nella chat (o "Run setup" nella tavolozza comandi).
 
@@ -11,3 +11,8 @@ Requisiti: HIP SDK 5.7 e 6.4, Visual Studio 2022 Build Tools con C++, `pip insta
 `third_party\llama.cpp`, sorgenti su disco locale con percorso corto (es. `C:\src\strata-mi50`).
 Build: `powershell -ExecutionPolicy Bypass -File packaging\build_hip_gfx906_windows.ps1 -Build C:\src\b906c`.
 Avvio: con `C:\Program Files\AMD\ROCm\5.7\bin` nel PATH (hipblas.dll, rocblas.dll); il runtime `amdhip64.dll` è quello del driver in System32.
+
+## Due schede per un modello (RX 9070 XT + MI50)
+Engine della 9070 da `C:\src1201` con `C:\Program Files\AMD\ROCm.4in` nel PATH, più gli argomenti
+`--expert-cache-device1 auto --expert-cache-plugin C:\src906c\strata_helper_gfx906.dll`. Prova: `C:\src9070-testench.py`.
+Serve commit di sistema libero quanto la VRAM usata (vedi changelog 0.2.2-mi50.9): file di paging grande.

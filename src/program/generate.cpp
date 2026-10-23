@@ -556,6 +556,8 @@ struct Options {
     std::array<bool, 3> expert_cache_remote_auto{};
     bool remote_expert_opt = false; ///< optional optimization of the existing remote-expert decode path
     std::string expert_cache_remote_placement = "stripe"; ///< stripe experts or assign complete layers to CUDA1..3
+    /// strata-mi50 (2026-10-23): the CUDA1 helper tier through a plugin DLL with its own HIP runtime ("dll" or "dll@device")
+    std::string expert_cache_plugin;
     bool expert_cache_cpu_order = false;
     /// **R4.2g.  ROUND 328 MEASURED THAT THE GLOBAL ADMISSION POLICY CANNOT WORK, AND THIS IS THE FIX.**
     /// The default policy hands out slots in arrival order from one counter shared by all 48 layers, so the
@@ -2549,6 +2551,7 @@ int main(int argc, char** argv) {
             o.expert_cache_remote[r] = v == "auto" ? std::numeric_limits<int>::max() : std::atoi(v.c_str());
         }
         else if (a == "--remote-expert-opt") o.remote_expert_opt = true;
+        else if (a == "--expert-cache-plugin") o.expert_cache_plugin = next("--expert-cache-plugin");
         else if (a == "--expert-cache-remote-placement")
             o.expert_cache_remote_placement = next("--expert-cache-remote-placement");
         else if (a == "--vram-reserve-mib") { o.vram_reserve_mib = std::atoi(next("--vram-reserve-mib")); o.vram_reserve_given = true; }
@@ -3312,6 +3315,23 @@ int main(int argc, char** argv) {
     if (o.expert_cache_remote_placement != "stripe" && o.expert_cache_remote_placement != "layer") {
         std::fprintf(stderr, "strata generate: --expert-cache-remote-placement must be stripe or layer\n");
         return 2;
+    }
+    if (!o.expert_cache_plugin.empty()) {
+        // strata-mi50: the helper tier CUDA1 (--expert-cache-device1) runs in a plugin that sees a GPU this runtime does not
+        // (Windows: the Radeon Pro VII / MI50 under HIP 5.x beside an RX 9070 XT under HIP 6/7).  Only the first helper.
+        if (o.expert_cache_remote[0] <= 0 || o.expert_cache_remote[1] > 0 || o.remote_expert_opt) {
+            std::fprintf(stderr, "strata generate: --expert-cache-plugin needs --expert-cache-device1 (only that helper; no --remote-expert-opt)\n");
+            return 2;
+        }
+        std::string dll = o.expert_cache_plugin;
+        int pdev = 0;
+        const size_t at = dll.rfind('@');
+        if (at != std::string::npos && at + 1 < dll.size() && std::isdigit((unsigned char) dll[at + 1])) {
+            pdev = std::atoi(dll.c_str() + at + 1);
+            dll.resize(at);
+        }
+        strata::core::RemoteExperts::set_plugin(dll, o.pack, pdev);
+        std::fprintf(stderr, "strata generate: helper tier CUDA1 through the plugin %s (its device %d)\n", dll.c_str(), pdev);
     }
     if (o.remote_expert_opt && !o.serve) {
         std::fprintf(stderr, "strata generate: --remote-expert-opt requires --serve\n");

@@ -1,6 +1,6 @@
-# context.md — versione 0.2.2-mi50.8 (2026-10-23 13:35)
+# context.md — versione 0.2.2-mi50.9 (2026-10-23 14:30)
 
-Stato: ⏳ fix VRAM del wizard corretto il 2026-10-23: la verifica precedente (32 GB) era un falso positivo, l'engine rx9070 vede solo la RX 9070 XT (15,9 GB); da riprovare nell'app vera (atteso: Pro VII 0 GB, totale VRAM ~16 GB). ✅ Engine gfx906 per Windows compilato e provato: il modello IQ3_S risponde sulla Pro VII (10,8 tok/s, changelog 0.2.2-mi50.8). ⏳ Integrazione nell'app (oggi solo server di prova su porta 8081, config `C:\src\mi50-test\strata-mi50.json`). ⏳ Velocità: PCIe 6,6 GB/s da capire. Le due schede non possono servire lo stesso modello: nessun runtime HIP le vede entrambe. PR wizard aperta: Niko1221/Strata#3798.
+Stato: ⏳ fix VRAM del wizard corretto il 2026-10-23: la verifica precedente (32 GB) era un falso positivo, l'engine rx9070 vede solo la RX 9070 XT (15,9 GB); da riprovare nell'app vera (atteso: Pro VII 0 GB, totale VRAM ~16 GB). ✅ Engine gfx906 per Windows compilato e provato: il modello IQ3_S risponde sulla Pro VII (10,8 tok/s, changelog 0.2.2-mi50.8). ⏳ Integrazione nell'app (oggi solo server di prova su porta 8081, config `C:\src\mi50-test\strata-mi50.json`). ⏳ Velocità: PCIe 6,6 GB/s da capire. ✅ Le due schede servono lo stesso modello: plugin HIP 5.x per la MI50 dentro l'engine della 9070 (PIANO_DUAL_GPU, changelog 0.2.2-mi50.9). ⏳ Più lento della sola 9070 (8,4 contro 10,9 tok/s): commit di sistema e latenza della MI50 da risolvere. PR wizard aperta: Niko1221/Strata#3798.
 ⏳ Monitor senza dati GPU: da ricontrollare con un modello caricato (senza modello è atteso).
 
 Fork di Strata per PC con AMD Radeon Pro VII / MI50 (gfx906) + RX 9070 XT (gfx1201), build HIP.
