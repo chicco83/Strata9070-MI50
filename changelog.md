@@ -1,4 +1,22 @@
-# changelog.md — versione 0.2.2-mi50.5 (2026-10-23 10:30)
+# changelog.md — versione 0.2.2-mi50.6 (2026-10-23 11:40)
+
+## 0.2.2-mi50.6 — 2026-10-23 11:40
+- Engine gfx906 per Windows COMPILATO (`strata.exe` 0.1.47, 38,9 MB; `--version` e `--families` -> `qwen4exp` funzionano).
+  NON ancora provato su un modello: l'app aveva il modello caricato e solo 5,6 GB di RAM libera.
+- Ricetta: `packaging/build_hip_gfx906_windows.ps1`, verificata da cartella vuota (`C:\src\b906s`, stesso `strata.exe`). Lo script usa il
+  CMake di pip (il CMake 3.31 di Visual Studio, messo nel PATH da vcvars64, non vede `C:\Windows\System32\amdhip64.dll`) e imposta
+  `HIP_PLATFORM=amd` (senza, hip-config.cmake del 5.7 si ferma).
+  Dettagli: Compilatore clang 20 del HIP SDK 6.4; header, bitcode e librerie del HIP SDK 5.7
+  (runtime 5.x, l'unico che vede gfx906 su Windows); code object v5.
+- Modifiche al codice (solo build gfx906 con HIP 5.x, le altre invariate; forma precedente lasciata nel codice):
+  - `include/strata/platform/hip_compat/cublas_v2.h`: hipBLAS 1.x non ha hipblasComputeType_t -> CUBLAS_COMPUTE_32F/CUDA_R_* su HIPBLAS_R_*.
+  - `src/core/pinned.cu`: HIP 5.x non ha `luid` in hipDeviceProp_t -> si usa il ripiego RAM/2 - 8 GiB.
+  - `src/kernels/cuda/iq_kernels.cu`: `__shared__ alignas(16)` rifiutato da clang 17 -> attributo dopo il dichiaratore (come #778).
+  - `CMakeLists.txt`: con HIP < 6 su Windows link con `/FORCE:MULTIPLE` (amd_hip_bf16.h del 5.7 definisce funzioni non inline: duplicati identici).
+- Ostacoli risolti senza toccare l'SDK: percorso `C:/constructicon/...` in hip-lang-targets.cmake (copia corretta nella cartella di build);
+  CMake 4 e file vecchi dell'SDK (`CMAKE_POLICY_VERSION_MINIMUM=3.5`); percorsi con spazi (nomi 8.3).
+- Scartato: compilare con clang 17 del 5.7 (STL di MSVC 14.44 vuole clang >= 19; serviva il toolset 14.40, che non si è installato).
+  Con clang 17 serviva anche `-mllvm -instcombine-infinite-loop-threshold` per un crash su ggml-cpu repack.cpp; con clang 20 no.
 
 ## 0.2.2-mi50.5 — 2026-10-23 10:30
 - CORREZIONE alla 0.2.2-mi50.4: la MI50/Pro VII È utilizzabile su Windows con il runtime HIP 5.x. I driver installati portano
@@ -13,7 +31,7 @@
 
 ## 0.2.2-mi50.4 — 2026-10-23 09:30
 - PR del fix del wizard sul repo principale: https://github.com/Niko1221/Strata/pull/3798 (solo `OnboardingMemory.tsx`, senza i documenti del fork).
-- Fattibilità MI50 su Windows: BLOCCATA sotto Strata. Con AMD HIP SDK 6.4 (`C:\Program Files\AMD\ROCm.4`) `amdgpu-arch` e `hipInfo`
+- Fattibilità MI50 su Windows: BLOCCATA sotto Strata. Con AMD HIP SDK 6.4 (`C:\Program Files\AMD\ROCm\6.4`) `amdgpu-arch` e `hipInfo`
   elencano solo la RX 9070 XT (gfx1201); la Radeon Pro VII (driver 31.0.21925.1001) non è enumerata dal runtime HIP. AMD non supporta gfx906 su
   Windows (HIP SDK 7.x: Pro VII "unsupported"). Quindi nessun engine HIP, di Strata o altro, può usarla qui; non è un difetto del codice di Strata.
 - Scelta: NON si prova a compilare la build gfx906 su Windows (non girerebbe). Vie rimaste: Linux (nativo/dual boot) con la build `STRATA_HIP_GFX906`

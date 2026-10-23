@@ -163,6 +163,13 @@ if(STRATA_HIP_GFX906)
   include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/strata/platform/hip_compat)
   add_compile_definitions(STRATA_HIP_GFX906=1)
   message(STATUS "Strata: HIP (gfx906 compat) enabled, arch ${CMAKE_HIP_ARCHITECTURES}")
+  # 2026-10-23 strata-mi50: HIP 5.x on Windows (the runtime that still lists gfx906 there) ships amd_hip_bf16.h with non-inline
+  # host functions (__float2bfloat16, __low2float, ...), so every object that includes it defines them and the link fails with
+  # duplicate symbols. The copies are identical: let the linker keep one. HIP 6 and later fixed the header; nothing changes there.
+  if(WIN32 AND hip_VERSION VERSION_LESS 6)
+    add_link_options(LINKER:/FORCE:MULTIPLE)
+    message(STATUS "Strata: HIP ${hip_VERSION} on Windows, linking with /FORCE:MULTIPLE (amd_hip_bf16.h duplicates)")
+  endif()
   set(_strata_gpu_runtime_target CUDA::cudart)
   set(_strata_gpu_blas_target CUDA::cublas)
   set(_strata_gpu_include_directories ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
