@@ -1,4 +1,15 @@
-# changelog.md — versione 0.2.2-mi50.9 (2026-10-23 14:30)
+# changelog.md — versione 0.2.2-mi50.10 (2026-10-23 15:10)
+
+## 0.2.2-mi50.10 — 2026-10-23 15:10
+- Limite di commit alzato dall'utente (file di paging: C: 33,8 GB + E: 9 GB, limite 105,5 GiB, 59,8 GiB liberi). Con lo stesso budget
+  di RAM per gli esperti (15,09 GiB, limitato dalla RAM libera: ~32 GB occupati da altri programmi) le due schede battono la sola 9070:
+  | stessa richiesta | prompt | decode |
+  |---|---|---|
+  | sola RX 9070 XT | 12,5 tok/s | 8,7 tok/s |
+  | 9070 + MI50 (plugin) | 28,1 tok/s | 10,4 tok/s |
+- PCIe della Pro VII (sessione di analisi separata): slot x16 n.2 collegato al chipset B650 a PCIe 4.0 x4, limite fisico (6,6 GB/s
+  misurati in entrambe le direzioni, pinned o no); non si cambia dal BIOS.
+- Attesa per la MI50 ancora ~2,9 s per risposta (5.882 lanci per strato): margine per ottimizzare.
 
 ## 0.2.2-mi50.9 — 2026-10-23 14:30
 - ✅ UN MODELLO SULLE DUE SCHEDE (RX 9070 XT + Radeon Pro VII / MI50) su Windows, nello stesso processo con due runtime HIP:

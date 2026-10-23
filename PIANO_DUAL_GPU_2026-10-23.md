@@ -1,4 +1,4 @@
-# PIANO_DUAL_GPU — versione 2 (2026-10-23 14:30)
+# PIANO_DUAL_GPU — versione 3 (2026-10-23 15:10)
 
 Obiettivo: un solo modello che usa la VRAM di entrambe le schede (RX 9070 XT gfx1201 + Radeon Pro VII / MI50 gfx906) su Windows.
 
@@ -29,7 +29,7 @@ sono build diverse).
 | 1 | Engine wave32 gfx1201 compilato con HIP SDK 6.4, modello sulla sola 9070, confronto con l'engine ufficiale 0.1.47 | ✅ 10,9 contro 10,8 tok/s |
 | 2 | Plugin gfx906: `RemoteExperts` con API C | ✅ (provato direttamente nel test della fase 3) |
 | 3 | Proxy `--expert-cache-plugin` nell'engine principale | ✅ risposta corretta, 15,36 GiB di esperti sulla MI50 |
-| 4 | Misure e velocità | ⏳ 8,4 tok/s contro 10,9: commit di sistema (file di paging), latenza per strato della MI50 |
+| 4 | Misure e velocità | ✅ con file di paging più grande: 10,4 contro 8,7 tok/s (stesso budget RAM); ⏳ ottimizzare la latenza per strato |
 | 5 | Configurazione nell'app | ⏳ |
 
 ## Rischi
