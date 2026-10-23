@@ -27,6 +27,15 @@
 #include "strata/prefill/moe_mmq.hpp"
 #include "strata/qwen35/engine.hpp"
 #include "q36_kernels.cuh"
+#if defined(__HIP_PLATFORM_AMD__)
+#include <hip/hip_version.h>
+#if HIP_VERSION_MAJOR < 7   // 2026-10-23 strata-mi50: HIP 6.x headers have __ldg only for __half / __half2 (mrope reads int32)
+#define STRATA_LDG_I32(p) (*(p))
+#endif
+#endif
+#ifndef STRATA_LDG_I32
+#define STRATA_LDG_I32(p) __ldg(p)
+#endif
 #if defined(STRATA_Q36_CPU_POOL)
 #include "strata/kernels/cpu/native_expert.hpp"
 #include "strata/kernels/cpu/pool.hpp"
@@ -279,7 +288,7 @@ __global__ void k_attn_prep(const float* qg, const float* kx, const float* vx, c
     const int half = n_rot / 2;
     if (i < n_rot) {
         const int p = i < half ? i : i - half;
-        const int rp = mtab ? __ldg(mtab + (size_t) pos * 3 + p % 3) : pos + dl;
+        const int rp = mtab ? STRATA_LDG_I32(mtab + (size_t) pos * 3 + p % 3) : pos + dl;   // was __ldg(...) (2026-10-23)
         const float theta = (float) rp * powf(base, -2.0f * (float) p / (float) n_rot);
         float sn, cs;
         sincosf(theta, &sn, &cs);

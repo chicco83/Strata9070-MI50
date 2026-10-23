@@ -147,3 +147,8 @@ inline hipError_t cudaGraphInstantiate(hipGraphExec_t* exec, hipGraph_t graph,
 #define cudaMemcpyFromSymbol(dst, symbol, ...) hipMemcpyFromSymbol(dst, HIP_SYMBOL(symbol), __VA_ARGS__)
 
 #include "intrinsics.hpp"
+#if HIP_VERSION_MAJOR < 7
+// 2026-10-23 strata-mi50: HIP 6.x headers define __ldg only for __half / __half2; the engine also reads int32 tables through
+// it (q36_engine.cu mrope). A plain load, as the HIP 7 headers do.
+template <class T> __device__ __forceinline__ T __ldg(const T* p) { return *p; }
+#endif

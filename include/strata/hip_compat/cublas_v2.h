@@ -1,4 +1,9 @@
 #pragma once
+// 2026-10-23 strata-mi50: hipBLAS 2.x (HIP SDK 6.4 on Windows) has the hipDataType / compute-type API only with HIPBLAS_V2;
+// hipBLAS 3+ has it by default, so defining it there changes nothing. Previous: the include below without this define.
+#ifndef HIPBLAS_V2
+#define HIPBLAS_V2
+#endif
 #include <hipblas/hipblas.h>
 #include <hipblas/hipblas-version.h>
 
@@ -58,6 +63,10 @@ inline rocblas_status cublasGemmEx(rocblas_handle h, rocblas_operation trans_a,
 #define cublasHandle_t hipblasHandle_t
 #define cublasSetMathMode hipblasSetMathMode
 #define cublasSetStream hipblasSetStream
+#if hipblasVersionMajor >= 3
 #define cublasSetWorkspace hipblasSetWorkspace
+#else   // 2026-10-23 strata-mi50: hipBLAS 2.x has no workspace API; rocBLAS keeps its own workspace (as the gfx906 compat does)
+#define cublasSetWorkspace(handle, ptr, bytes) HIPBLAS_STATUS_SUCCESS
+#endif
 #define cublasStatus_t hipblasStatus_t
 #endif

@@ -1,4 +1,8 @@
 // src/core/mtp.cpp - see include/strata/core/mtp.hpp.
+#if defined(_WIN32)
+#define NOMINMAX
+#include <windows.h>
+#endif
 #include "strata/core/mtp.hpp"
 #include "strata/core/pin_budget.hpp"
 #include "strata/kernels/qsa_prompt_attn.hpp"
@@ -844,7 +848,18 @@ void mtp_list_nodes(cudaGraph_t graph, const char* what) {
         if (ty == hipGraphNodeTypeKernel) {
             hipKernelNodeParams kp{};
             if (hipGraphKernelNodeGetParams(nd, &kp) == hipSuccess && kp.func != nullptr) {
+#if defined(_WIN32)   // 2026-10-23 strata-mi50: as verify.cpp, looked up at run time (the HIP 6.4 import library lacks it)
+                using Fn_hipKernelNameRefByPtr = const char* (*)(const void*, hipStream_t);
+                static auto p_name = [] {
+                    for (const char* dll : {"amdhip64_7.dll", "amdhip64_6.dll"})
+                        if (HMODULE m = GetModuleHandleA(dll))
+                            if (auto f = reinterpret_cast<Fn_hipKernelNameRefByPtr>(GetProcAddress(m, "hipKernelNameRefByPtr"))) return f;
+                    return (Fn_hipKernelNameRefByPtr) nullptr;
+                }();
+                const char* fn = p_name ? p_name(kp.func, nullptr) : nullptr;
+#else
                 const char* fn = hipKernelNameRefByPtr(kp.func, nullptr);
+#endif
                 if (fn != nullptr) name = fn;
             }
         }
