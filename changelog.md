@@ -1,4 +1,17 @@
-# changelog.md — versione 0.2.2-mi50.6 (2026-10-23 11:40)
+# changelog.md — versione 0.2.2-mi50.7 (2026-10-23 12:30)
+
+## 0.2.2-mi50.7 — 2026-10-23 12:30
+- Prova sulla Pro VII: l'engine gfx906 CARICA il modello IQ3_S (6,69 GiB esperti in VRAM, 27,65 GiB in RAM, "ready") ma alla prima
+  richiesta esce con 0xC0000005 (accesso non valido). PCIe misurato 6,6 GB/s (Windows riporta link Gen4 x16: causa non chiarita).
+- Diagnosi (nuovo tracciatore opzionale `STRATA_CRASH_TRACE=1` in `src/program/generate.cpp`, solo Windows, spento per default):
+  crash dentro `amdhip64.dll` (runtime 5.x, in hipLaunchKernel) al lancio di `sampler_greedy_kernel` da `sample_tokens`
+  (`src/kernels/cuda/sampler.cu`), chiamato da `Verifier::record_window`. Si riproduce SENZA cattura di grafo in un programma minimo
+  (`C:\src\mi50-test\repro\repro4.hip`), anche con 64 thread. Lo stesso kernel lanciato via hipModuleLaunchKernel dal suo code object
+  funziona; un kernel minuscolo nello stesso file funziona.
+- Ipotesi scartate: memoria condivisa dinamica / argomento nascosto hidden_dynamic_lds_size (test con slot avvelenato: nessun crash),
+  struttura per valore (kernel analogo funziona), cattura in grafo, opzioni CMake. Code object v4 non utilizzabile (hip.bc del 5.7 è v5).
+- Da fare: capire perché il lancio registrato di quel kernel fallisce nel runtime 5.x (prossimi passi: copiare il kernel nel repro
+  e ridurlo fino al punto che cambia l'esito; confrontare con il lancio via modulo).
 
 ## 0.2.2-mi50.6 — 2026-10-23 11:40
 - Engine gfx906 per Windows COMPILATO (`strata.exe` 0.1.47, 38,9 MB; `--version` e `--families` -> `qwen4exp` funzionano).

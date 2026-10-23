@@ -16695,3 +16695,45 @@ int main(int argc, char** argv) {
     cudaFree(arena);
     return 0;
 }
+
+#if defined(_WIN32)
+// 2026-10-23 strata-mi50: STRATA_CRASH_TRACE=1 prints the stack of an access violation (or other fatal exception) as
+// module+offset lines before the process dies, to read with llvm-symbolizer against a build with debug info. Diagnostic
+// only, off by default: found for the gfx906 / HIP 5.x Windows build, where the verify window capture exits with 0xC0000005.
+namespace {
+LONG WINAPI strata_crash_trace(EXCEPTION_POINTERS* ep) {
+    const DWORD code = ep->ExceptionRecord->ExceptionCode;
+    if (code != EXCEPTION_ACCESS_VIOLATION && code != EXCEPTION_ILLEGAL_INSTRUCTION && code != EXCEPTION_STACK_OVERFLOW &&
+        code != EXCEPTION_INT_DIVIDE_BY_ZERO)
+        return EXCEPTION_CONTINUE_SEARCH;
+    // first-chance: an exception some library handles itself is reported too, so up to 4 are printed, each with its stack
+    static std::atomic<int> seen{0};
+    if (seen.fetch_add(1) >= 4) return EXCEPTION_CONTINUE_SEARCH;
+    std::fprintf(stderr, "strata crash trace: exception 0x%08lx at %p", (unsigned long) code, ep->ExceptionRecord->ExceptionAddress);
+    if (code == EXCEPTION_ACCESS_VIOLATION && ep->ExceptionRecord->NumberParameters >= 2)
+        std::fprintf(stderr, " (%s address %p)", ep->ExceptionRecord->ExceptionInformation[0] ? "writing" : "reading",
+                     (void*) ep->ExceptionRecord->ExceptionInformation[1]);
+    std::fprintf(stderr, ", thread %lu\n", (unsigned long) GetCurrentThreadId());
+    void* frames[64];
+    const USHORT n = RtlCaptureStackBackTrace(0, 64, frames, nullptr);
+    auto line = [](int i, void* pc) {
+        HMODULE mod = nullptr;
+        char name[MAX_PATH] = "?";
+        if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR) pc, &mod))
+            GetModuleFileNameA(mod, name, MAX_PATH);
+        const char* base = std::strrchr(name, 92);   // the last backslash of the module path
+        std::fprintf(stderr, "strata crash trace: #%02d %s+0x%llx\n", i, base ? base + 1 : name,
+                     (unsigned long long) ((const char*) pc - (const char*) mod));
+    };
+    line(-1, ep->ExceptionRecord->ExceptionAddress);
+    for (USHORT i = 0; i < n; ++i) line(i, frames[i]);
+    std::fflush(stderr);
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+struct StrataCrashTrace {
+    StrataCrashTrace() {
+        if (const char* e = std::getenv("STRATA_CRASH_TRACE"); e && e[0] == '1') AddVectoredExceptionHandler(1, strata_crash_trace);
+    }
+} strata_crash_trace_install;
+}  // namespace
+#endif
