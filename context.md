@@ -1,6 +1,6 @@
-# context.md — versione 0.2.2-mi50.2 (2026-10-23 08:00)
+# context.md — versione 0.2.2-mi50.3 (2026-10-23 08:40)
 
-Stato: ✅ fix VRAM del wizard verificato sull'app vera il 2026-10-23 (32 GB totali, 16 GB per scheda). ⏳ pull request non ancora fatta.
+Stato: ⏳ fix VRAM del wizard corretto il 2026-10-23: la verifica precedente (32 GB) era un falso positivo, l'engine rx9070 vede solo la RX 9070 XT (15,9 GB); da riprovare nell'app vera (atteso: Pro VII 0 GB, totale VRAM ~16 GB). ⏳ Pro VII/MI50 non usata dall'engine: serve engine gfx906. ⏳ pull request non ancora fatta.
 ⏳ Monitor senza dati GPU: da ricontrollare con un modello caricato (senza modello è atteso).
 
 Fork di Strata per PC con AMD Radeon Pro VII / MI50 (gfx906) + RX 9070 XT (gfx1201), build HIP.

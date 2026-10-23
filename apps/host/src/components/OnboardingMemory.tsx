@@ -13,12 +13,15 @@ export function OnboardingMemory({ hardware, native }: {
     // (matched by name first, then by position). Previous line kept for reference:
     // const gpus = hardware ? hardware.gpus.filter(gpu => gpu.backend !== 'cpu').map(gpu => ({ id: gpu.id ?? String(gpu.index), name: gpu.name, memory: gpu.vramGb, shared: gpu.unified })) : native?.gpus.map(...) ?? [];
     const nativeGpus = native?.gpus ?? [];
+    const hostGpus = hardware ? hardware.gpus.filter(gpu => gpu.backend !== 'cpu') : [];
     const nativeVram = (name: string, position: number) => {
         const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
         const byName = nativeGpus.find(g => norm(g.name) === norm(name) || norm(g.name).includes(norm(name)) || norm(name).includes(norm(g.name)));
-        return (byName ?? nativeGpus[position])?.vram_gb || 0;
+        // 2026-10-23: the position fallback applies only when host and engine list the same number of cards. Before, a card the
+        // engine does not see (Radeon Pro VII with the rx9070 engine bundle) borrowed the first engine card's VRAM: a wrong 32 GB total.
+        // Previous line: return (byName ?? nativeGpus[position])?.vram_gb || 0;
+        return (byName ?? (nativeGpus.length === hostGpus.length ? nativeGpus[position] : undefined))?.vram_gb || 0;
     };
-    const hostGpus = hardware ? hardware.gpus.filter(gpu => gpu.backend !== 'cpu') : [];
     const gpus = hardware ? hostGpus.map((gpu, position) => ({ id: gpu.id ?? String(gpu.index), name: gpu.name, memory: gpu.unified || gpu.vramGb > 0 ? gpu.vramGb : nativeVram(gpu.name, position), shared: gpu.unified })) : nativeGpus.map(gpu => ({ id: String(gpu.index), name: gpu.name, memory: gpu.vram_gb, shared: false }));
     const dedicatedCount = gpus.filter(gpu => !gpu.shared).length;
     // The VRAM total follows the corrected per-GPU list (previous: memoryInventory(hardware) alone, 2026-10-22).
