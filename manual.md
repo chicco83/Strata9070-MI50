@@ -14,5 +14,5 @@ Avvio: con `C:\Program Files\AMD\ROCm\5.7\bin` nel PATH (hipblas.dll, rocblas.dl
 
 ## Due schede per un modello (RX 9070 XT + MI50)
 Engine della 9070 da `C:\src\b1201` con `C:\Program Files\AMD\ROCm\6.4\bin` nel PATH, più gli argomenti
-`--expert-cache-device1 auto --expert-cache-plugin C:\src\b906c\strata_helper_gfx906.dll`. Prova: `C:\src9070-test\bench.py`.
+`--expert-cache-device1 auto --expert-cache-plugin C:\src\b906c\strata_helper_gfx906.dll`. Prova: `C:\src\r9070-test\bench.py`.
 Serve commit di sistema libero quanto la VRAM usata (vedi changelog 0.2.2-mi50.9): file di paging grande.
