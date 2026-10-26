@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.18 (2026-10-27 00:07)
+# context.md — versione 0.2.2-mi50.19 (2026-10-27 00:16)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),

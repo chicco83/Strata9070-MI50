@@ -90,9 +90,14 @@
   .monitor-metric:nth-child(even) .monitor-spark .spark__readout { right: 0; left: auto; }
 }
 
-/* strata-mi50 (2026-10-26): the Monitor's Record log button - a hollow circle, a red one that pulses while a recording runs */
-.monitor-record { gap: 8px; }
-.monitor-record__dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; box-sizing: border-box; flex: none; }
-.monitor-record__dot[data-on="true"] { background: #e5484d; border-color: #e5484d; box-shadow: 0 0 0 0 rgba(229, 72, 77, .6); animation: monitor-record-pulse 1.4s ease-out infinite; }
-@keyframes monitor-record-pulse { 0% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .6); } 100% { box-shadow: 0 0 0 8px rgba(229, 72, 77, 0); } }
-@media (prefers-reduced-motion: reduce) { .monitor-record__dot[data-on="true"] { animation: none; } }
+/* strata-mi50: the Record log button - 2026-10-26 in the Monitor's header (.monitor-record), 2026-10-27 one for the whole app,
+   fixed at the top centre of the window on every screen: a hollow circle, a red one that pulses while a recording runs */
+.record-log { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 60; display: inline-flex; align-items: center; gap: 8px;
+  padding: 4px 12px; border-radius: 999px; border: 1px solid var(--st-line, rgba(127,127,127,.35)); background: var(--st-surface, #1b1d22);
+  color: var(--st-ink, inherit); font: inherit; font-size: 12px; line-height: 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.record-log:hover { border-color: currentColor; }
+.record-log[data-on="true"] { border-color: #e5484d; color: #ff6b6f; }
+.record-log__dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; box-sizing: border-box; flex: none; }
+.record-log[data-on="true"] .record-log__dot { background: #e5484d; border-color: #e5484d; animation: record-log-pulse 1.4s ease-out infinite; }
+@keyframes record-log-pulse { 0% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .6); } 100% { box-shadow: 0 0 0 8px rgba(229, 72, 77, 0); } }
+@media (prefers-reduced-motion: reduce) { .record-log[data-on="true"] .record-log__dot { animation: none; } }

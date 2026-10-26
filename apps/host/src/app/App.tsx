@@ -18,6 +18,7 @@ import { ChatScreen } from '../screens/Chat';
 import { ModelRunScreen } from '../screens/ModelRun';
 import { ServingScreen } from '../screens/Serving';
 import { MonitorScreen } from '../screens/Monitor';
+import { RecordLogButton } from '../components/RecordLogButton';
 import { TasksScreen } from '../screens/Tasks';
 import { SkillsScreen } from '../screens/Skills';
 import { SettingsScreen } from '../screens/Settings';
@@ -75,6 +76,7 @@ function AppShell() {
           </div>
         </div>) : null)}
       <Toasts />
+      <RecordLogButton />
     </div>);
 }
 /**

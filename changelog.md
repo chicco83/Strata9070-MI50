@@ -1,4 +1,7 @@
-# changelog.md — versione 0.2.2-mi50.18 (2026-10-27 00:07)
+# changelog.md — versione 0.2.2-mi50.19 (2026-10-27 00:16)
+
+## 0.2.2-mi50.19 — 2026-10-27 00:16
+- Pulsante **Record log** unico per tutta l'app, sempre in alto al centro della finestra su ogni schermata e chat (`components/RecordLogButton.tsx`, montato in `app/App.tsx`, stile `.record-log` in `styles/monitor.css`); durante la registrazione è bordato di rosso con il cerchio rosso che pulsa e il conteggio dei secondi. Tolto dall'intestazione del Monitor (versione del 2026-10-26). Installato nell'app; non ancora visto dall'utente.
 
 ## 0.2.2-mi50.18 — 2026-10-27 00:07
 - **Turni brevi lenti: causa e correzione.** Il motore legge i token nuovi di un turno in due modi: fino a `--short-read`

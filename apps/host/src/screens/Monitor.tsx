@@ -13,8 +13,7 @@ import { Bar, Btn, Icon, IconBtn, Select, type IconName } from '../components/ui
 import { Screen } from '../components/layout';
 import { contextLabel, duration, tokens, tps } from '../lib/format';
 import { defaultGpuSet, gpuCapacity, gpuId, gpuMetric, gpuReported, hasReading, shortGpuName } from '../lib/monitor-hardware';
-import { pushToast, useStore } from '../lib/store';
-import { startRecording, stopRecording, useDiagnosticsRecording } from '../lib/diagnostics-recorder';
+import { useStore } from '../lib/store';
 import { useKept } from '../lib/kept-state';
 import type { Hardware, MonitorState, ServeRequest } from '../lib/types';
 import { useNative, nativeRouting, type NativeState } from '../lib/native';
@@ -89,23 +88,7 @@ function LegacyMonitorScreen({ native }: {
     const snapshotRef = useRef<HTMLDivElement>(null);
     const [saving, setSaving] = useState(false), [saveError, setSaveError] = useState('');
     const [snapshotOpen, setSnapshotOpen] = useState(false), [screenshot, setScreenshot] = useState('');
-    // strata-mi50 (2026-10-26): Record diagnostics (lib/diagnostics-recorder.ts)
-    // the recorder runs outside this screen, so a recording goes on while a chat is open
-    const recorder = useDiagnosticsRecording();
-    function toggleRecording() {
-        if (!recorder.recording) {
-            startRecording();
-            pushToast('success', tr('Recording the log'), tr('The Monitor readings are saved once a second, also while you use other screens, until you press Stop.'));
-            return;
-        }
-        try {
-            const name = stopRecording();
-            pushToast('success', tr('Diagnostics saved'), `${name} · ${tr('It is in your Downloads folder.')}`);
-        }
-        catch {
-            pushToast('error', tr('The diagnostics were not saved'), tr('Try again.'));
-        }
-    }
+    // strata-mi50: the Record log button (2026-10-26 here in the header) is now one for the whole app, components/RecordLogButton.tsx (2026-10-27)
     async function saveScreenshot() {
         if (!live || !snapshotRef.current || saving)
             return;
@@ -231,5 +214,5 @@ function LegacyMonitorScreen({ native }: {
     </section>
     {tr(data.mcp?.servers.length ? <section className="st-card monitor-mcp"><div className="section-toolbar"><h2 className="h4">{tr("MCP servers")}</h2><span className="small muted">{tr("{0} tools · {1} of {2} servers connected", [number(data.mcp.tools),number(data.mcp.servers.filter(server => ['ready','stopped'].includes(server.state)).length),number(data.mcp.servers.length)])}</span></div>{tr(data.mcp.servers.map(server => <div key={server.name}><div className="row row--between"><strong>{server.name}</strong><span className="small muted">{tr({ ready: 'Connected', starting: 'Starting', failed: 'Failed', stopped: 'Stopped', idle: 'Waiting' }[server.state] ?? server.state)}</span></div><p className="xs muted">{server.transport}{tr(server.transport ? ' · ' : '')}{tr(server.tools.length)}{tr(" tools")}{tr(server.info?.name ? ` · ${server.info.name}${server.info.version ? ` ${server.info.version}` : ''}` : '')}</p>{tr(server.error ? <p className="small inline-error">{tr(server.error)}</p> : null)}<div className="monitor-mcp-tools">{tr(server.tools.map(tool => <span key={tool.name} title={tr(tool.description)} className="st-badge">{tool.name}</span>))}</div></div>))}</section> : null)}
   </div>;
-    return <Screen width="wide" plainHeader title={tr("Monitor")} titleDetail={multipleModels ? <Select ariaLabel={tr("Monitor model")} value={selection} options={[{ value: 'all', label: `All models (${runtime?.instances.length ?? 0})` }, ...(runtime?.instances ?? []).map(i => ({ value: i.id, label: `${instanceLabel(i)} · ${deviceLabel(i.gpuIds, inventory)}` }))]} onChange={chooseInstance}/> : selectedInstance ? instanceLabel(selectedInstance) : 'No model loaded'} actions={<><Btn size="sm" variant={recorder.recording ? 'primary' : 'secondary'} className="monitor-record" title={tr(recorder.recording ? 'Stop and save the log' : 'Record a log of every reading, once a second')} onClick={toggleRecording}><span className="monitor-record__dot" data-on={recorder.recording}/>{tr(recorder.recording ? `Stop log · ${recorder.count} s` : 'Record log')}</Btn><IconBtn name="image" title={tr(saving ? 'Preparing screenshot…' : 'Save Monitor screenshot')} disabled={saving} onClick={() => void saveScreenshot()}/></>}>{tr(saveError ? <p className="inline-error" role="alert">{tr(saveError)}</p> : null)}{tr(overview)}<SnapshotDialog open={snapshotOpen} data={screenshot} pending={saving} error={saveError} onClose={() => setSnapshotOpen(false)} onRetry={() => void saveScreenshot()}/></Screen>;
+    return <Screen width="wide" plainHeader title={tr("Monitor")} titleDetail={multipleModels ? <Select ariaLabel={tr("Monitor model")} value={selection} options={[{ value: 'all', label: `All models (${runtime?.instances.length ?? 0})` }, ...(runtime?.instances ?? []).map(i => ({ value: i.id, label: `${instanceLabel(i)} · ${deviceLabel(i.gpuIds, inventory)}` }))]} onChange={chooseInstance}/> : selectedInstance ? instanceLabel(selectedInstance) : 'No model loaded'} actions={<><IconBtn name="image" title={tr(saving ? 'Preparing screenshot…' : 'Save Monitor screenshot')} disabled={saving} onClick={() => void saveScreenshot()}/></>}>{tr(saveError ? <p className="inline-error" role="alert">{tr(saveError)}</p> : null)}{tr(overview)}<SnapshotDialog open={snapshotOpen} data={screenshot} pending={saving} error={saveError} onClose={() => setSnapshotOpen(false)} onRetry={() => void saveScreenshot()}/></Screen>;
 }
