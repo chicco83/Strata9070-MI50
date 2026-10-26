@@ -156,6 +156,13 @@ STRATA_HELPER_EXPORT int strata_helper_adapt(void* h, const float* usage, const 
     return 0;
 }
 
+STRATA_HELPER_EXPORT int strata_helper_copy_blobs(void* h, const int32_t* layers, const int32_t* experts, uint8_t* const* dst,
+                                                  int64_t n, uint8_t* hit, char* err, int err_len) {
+    std::string e;
+    if (!((Tier*) h)->remote.copy_cached_blobs(layers, experts, dst, (size_t) n, hit, e)) { put(err, err_len, e); return 1; }
+    return 0;
+}
+
 STRATA_HELPER_EXPORT int strata_helper_owns(void* h, int64_t index) { return ((Tier*) h)->remote.owns(index) ? 1 : 0; }
 
 STRATA_HELPER_EXPORT int strata_helper_holds(void* h, int64_t layer, int32_t expert) {

@@ -1,4 +1,24 @@
-# changelog.md — versione 0.2.2-mi50.20 (2026-10-27 00:22)
+# changelog.md — versione 0.2.2-mi50.21 (2026-10-27 00:56)
+
+## 0.2.2-mi50.21 — 2026-10-27 00:56
+Tutte le misure con il profilo dell'app «Leave 20% for my work» («Full performance» non ancora misurato).
+- **Plugin ABI 4: la lettura del prompt prende dalla VRAM della MI50 i pesi che tiene** (`strata_helper_copy_blobs`,
+  `RemoteExperts::copy_cached_blobs` inoltrato al plugin; si attiva con `STRATA_PREFILL_HELPER_SOURCE=1`). Motivo: i 15,4 GiB della
+  MI50 sono esclusi dalla copia in RAM, quindi la lettura del prompt li rileggeva dal disco. Funziona (16.246 blocchi, 31,4 GiB
+  presi dalla MI50 per richiesta) ma **non fa guadagnare**: a motore caldo la lettura del prompt è limitata dal calcolo della 9070
+  (tempo totale = tempo GPU). Misura `scripts/mi50-bench/prefill_bench.py`, due prompt da 9.560 e 12.279 token dopo 120 s di
+  riscaldamento: spento 868 / 1.048 tok/s, acceso 849 / 1.021 tok/s. **Lasciato spento** (default).
+- **Lettura dei prompt a motore caldo: 850–1.050 tok/s**, contro i 422–650 della chat nell'app: dopo il caricamento il motore
+  copia i pesi in RAM per ~80–120 s (CPU ~60% a modello fermo); i prompt letti in quella fase vanno a metà velocità.
+- **Zero-copy della MI50** (`STRATA_REMOTE_ZEROCOPY=0`, copie esplicite): attesa della MI50 -25…-40%, velocità di scrittura
+  uguale (terzo giro a ordine invertito: 48,6 contro 48,3 tok/s; il primo giro con zero-copy a 31–38 tok/s era un'anomalia).
+  **Non cambiato**: in scrittura la 9070 è al ~90% e resta il collo, la MI50 che risponde prima non accorcia lo strato.
+- Conclusione su «sfruttare di più la MI50»: con l'architettura attuale (MI50 = esperti in più, la 9070 fa denso, attenzione e
+  KV) la MI50 è già usata quanto serve; il limite è la 9070, sia in lettura del prompt sia in scrittura. Margini restanti:
+  profilo «Full performance», più RAM per gli esperti (in scrittura si leggono ancora 125–310 MB/s dal disco), meno VRAM della
+  9070 per KV e testa di bozza (più cache esperti). Far calcolare alla MI50 parti di strato (divisione per strati tra due runtime)
+  sarebbe un progetto a sé.
+- Componente dell'app ricostruito con engine e plugin ABI 4 (`packaging/make_component_mi50.py --pin`).
 
 ## 0.2.2-mi50.20 — 2026-10-27 00:22
 - Pulsante **Record log** riportato in alto a destra, dove stava nell'intestazione del Monitor accanto all'icona dello screenshot (richiesta dell'utente); resta unico e visibile su ogni schermata (`.record-log`: `right: 76px`, centrato nell'altezza dell'intestazione; prima in alto al centro).

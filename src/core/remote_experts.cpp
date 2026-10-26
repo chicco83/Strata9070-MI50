@@ -91,6 +91,7 @@ struct HelperPlugin {
     strata_helper_begin_opt_t begin_opt = nullptr;
     strata_helper_finish_opt_t finish_opt = nullptr;
     strata_helper_adapt_t adapt = nullptr;           // ABI 3 (2026-10-26): adaptive swaps on the helper
+    strata_helper_copy_blobs_t copy_blobs = nullptr; // ABI 4 (2026-10-27): the prompt path reads the helper's blobs
 };
 HelperPlugin& helper_plugin() { static HelperPlugin p; return p; }
 
@@ -125,8 +126,9 @@ bool load_helper_plugin(std::string& err) {
     p.begin_opt = (strata_helper_begin_opt_t) sym("strata_helper_begin_opt");
     p.finish_opt = (strata_helper_finish_opt_t) sym("strata_helper_finish_opt");
     p.adapt = (strata_helper_adapt_t) sym("strata_helper_adapt");
+    p.copy_blobs = (strata_helper_copy_blobs_t) sym("strata_helper_copy_blobs");
     if (!p.init || !p.open || !p.close || !p.begin || !p.finish || !p.owns || !p.holds || !p.stats ||
-        !p.open2 || !p.begin_opt || !p.finish_opt || !p.adapt) {
+        !p.open2 || !p.begin_opt || !p.finish_opt || !p.adapt || !p.copy_blobs) {
         err = "helper plugin: " + p.dll + " lacks an entry point";
         return false;
     }
@@ -605,7 +607,12 @@ bool RemoteExperts::adapt_swaps(const float* usage, const int32_t* primary, uint
 bool RemoteExperts::copy_cached_blobs(const int32_t* layers, const int32_t* experts, uint8_t* const* dst,
                                       size_t n, uint8_t* hit, std::string& err) {
     std::fill(hit, hit + n, 0);
-    if (plugin_ || device_ < 0 || read_stream_ == nullptr || n == 0) return true;   // plugin: no cache reads (misses)
+    if (plugin_ && n > 0) {   // 2026-10-27: the plugin copies from the helper's VRAM (ABI 4); was: every blob a miss, read from the files
+        char e[512] = {};
+        if (helper_plugin().copy_blobs(plugin_, layers, experts, dst, (int64_t) n, hit, e, (int) sizeof e) != 0) { err = e; return false; }
+        return true;
+    }
+    if (plugin_ || device_ < 0 || read_stream_ == nullptr || n == 0) return true;
     const auto& lay = strata::kernels::cpu::expert_layout();
     DeviceScope scope(device_);
     if (!scope.ok) { err = scope.error(device_); return false; }

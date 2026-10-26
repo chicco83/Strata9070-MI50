@@ -9,7 +9,8 @@
 
 // 2 (2026-10-26): --remote-expert-opt through the plugin (open2, begin_opt, finish_opt); was 1
 // 3 (2026-10-26): the helper's adaptive expert swaps (adapt)
-#define STRATA_HELPER_ABI_VERSION 3
+// 4 (2026-10-27): the prompt path reads the experts the helper holds from its VRAM (copy_blobs, STRATA_PREFILL_HELPER_SOURCE)
+#define STRATA_HELPER_ABI_VERSION 4
 
 #if defined(_WIN32)
 #define STRATA_HELPER_EXPORT __declspec(dllexport)
@@ -68,6 +69,13 @@ typedef int (*strata_helper_finish_opt_t)(void* h, float* sum, uint8_t* owned, c
 // the new blobs through `blob` and waiting for each copy, so no blob pointer is used after return.  `swapped` gets the count.
 typedef int (*strata_helper_adapt_t)(void* h, const float* usage, const int32_t* primary, uint8_t* resident, int64_t n,
                                      int max_swaps, strata_helper_blob_fn blob, void* ctx, int* swapped, char* err, int err_len);
+
+// ---- version 4 (2026-10-27): RemoteExperts::copy_cached_blobs for a plugin tier.  The experts the helper holds are left out of
+// the engine's RAM copy, so without this the prompt path read them from the model files (2-3 GB/s on the owner's PC) while the
+// helper sat idle.  Copies up to n blobs into the host buffers dst[i] and waits; hit[i] = 1 where the helper held (layers[i],
+// experts[i]).  0 = ok (the hits are complete); otherwise err says why and the caller reads the rest from its fallback.
+typedef int (*strata_helper_copy_blobs_t)(void* h, const int32_t* layers, const int32_t* experts, uint8_t* const* dst, int64_t n,
+                                          uint8_t* hit, char* err, int err_len);
 
 #ifdef __cplusplus
 }

@@ -11,6 +11,7 @@ che ha un modello caricato la VRAM non basta: scaricare prima il modello. I perc
 | `bench4.py` | quattro richieste diverse sullo stesso server (scambi adattivi) | come `bench.py` |
 | `turns.py` | una chat: un turno lungo e tre brevi, con le righe `STRATA_TRACE` di ogni turno | `python -I turns.py CONFIG.json 8082` |
 | `turns2.py` | come `turns.py`, con turni da ~125, ~450 e ~650 token nuovi (soglia `--short-read`) | come `turns.py` |
+| `prefill_bench.py` | due prompt grandi a motore caldo (attesa dopo ready), per la lettura del prompt | `python -I prefill_bench.py CONFIG.json 8082 [ATTESA_S]` |
 | `df2bench.py` | MTP contro DFlash2 da riga di comando, sola 9070 | `python -I df2bench.py CONFIG.json` |
 
 Per il tracciamento mettere nella config `"env": {"STRATA_TRACE": "1"}` (e `"STRATA_PREFILL_TIMING": "1"` per le fasi
