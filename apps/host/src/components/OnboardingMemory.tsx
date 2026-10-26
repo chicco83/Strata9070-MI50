@@ -8,23 +8,18 @@ export function OnboardingMemory({ hardware, native }: {
     hardware: Hardware | null;
     native: NativeState['hardware'] | undefined;
 }) {
-    // v0.2.2-mi50.1 (2026-10-22): the host probe on Windows (Win32_VideoController) reports 0 GB VRAM for AMD cards, while the
-    // engine's own list (native) has the real size. When the host says 0 for a dedicated GPU, take the engine's number
-    // (matched by name first, then by position). Previous line kept for reference:
-    // const gpus = hardware ? hardware.gpus.filter(gpu => gpu.backend !== 'cpu').map(gpu => ({ id: gpu.id ?? String(gpu.index), name: gpu.name, memory: gpu.vramGb, shared: gpu.unified })) : native?.gpus.map(...) ?? [];
+    // The Windows host probe (Win32_VideoController) cannot read the VRAM of AMD cards and reports 0 for them; the engine's own list has
+    // the real size. For a dedicated card the host reports as 0, take the engine's figure for the card of the same name, or for the
+    // card in the same position when both lists have the same length. A card the engine does not list stays at 0.
     const nativeGpus = native?.gpus ?? [];
     const hostGpus = hardware ? hardware.gpus.filter(gpu => gpu.backend !== 'cpu') : [];
-    const nativeVram = (name: string, position: number) => {
+    const engineVram = (name: string, position: number) => {
         const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const byName = nativeGpus.find(g => norm(g.name) === norm(name) || norm(g.name).includes(norm(name)) || norm(name).includes(norm(g.name)));
-        // 2026-10-23: the position fallback applies only when host and engine list the same number of cards. Before, a card the
-        // engine does not see (Radeon Pro VII with the rx9070 engine bundle) borrowed the first engine card's VRAM: a wrong 32 GB total.
-        // Previous line: return (byName ?? nativeGpus[position])?.vram_gb || 0;
+        const byName = nativeGpus.find(g => norm(g.name).includes(norm(name)) || norm(name).includes(norm(g.name)));
         return (byName ?? (nativeGpus.length === hostGpus.length ? nativeGpus[position] : undefined))?.vram_gb || 0;
     };
-    const gpus = hardware ? hostGpus.map((gpu, position) => ({ id: gpu.id ?? String(gpu.index), name: gpu.name, memory: gpu.unified || gpu.vramGb > 0 ? gpu.vramGb : nativeVram(gpu.name, position), shared: gpu.unified })) : nativeGpus.map(gpu => ({ id: String(gpu.index), name: gpu.name, memory: gpu.vram_gb, shared: false }));
+    const gpus = hardware ? hostGpus.map((gpu, position) => ({ id: gpu.id ?? String(gpu.index), name: gpu.name, memory: gpu.unified || gpu.vramGb > 0 ? gpu.vramGb : engineVram(gpu.name, position), shared: gpu.unified })) : nativeGpus.map(gpu => ({ id: String(gpu.index), name: gpu.name, memory: gpu.vram_gb, shared: false }));
     const dedicatedCount = gpus.filter(gpu => !gpu.shared).length;
-    // The VRAM total follows the corrected per-GPU list (previous: memoryInventory(hardware) alone, 2026-10-22).
     const base = hardware ? memoryInventory(hardware) : null;
     const memory = base ? (base.shared ? base : { ...base, vram: gpus.reduce((sum, gpu) => sum + (gpu.shared ? 0 : Math.max(0, gpu.memory || 0)), 0) }) : native ? { ram: native.ram_gb, vram: native.gpus.reduce((sum, gpu) => sum + Math.max(0, gpu.vram_gb || 0), 0), total: 0, shared: false } : null;
     if (!memory)
