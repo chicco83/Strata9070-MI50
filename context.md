@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.11 (2026-10-23 16:00)
+# context.md — versione 0.2.2-mi50.12 (2026-10-26 20:06)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -11,8 +11,8 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Fix VRAM nel wizard (`apps/host/src/components/OnboardingMemory.tsx`) | ✅ PR Niko1221/Strata#3798 aperta; ⏳ da riprovare nell'app (atteso Pro VII 0 GB, VRAM ~16 GB) |
 | Engine gfx906 per Windows (MI50 da sola) | ✅ `packaging/build_hip_gfx906_windows.ps1`; risponde a 10,8 tok/s |
 | Engine wave32 gfx1201 compilato con HIP SDK 6.4 | ✅ uguale all'ufficiale (10,9 contro 10,8 tok/s) |
-| Un modello sulle due schede (plugin HIP 5.x) | ✅ 10,4 contro 8,7 tok/s decode e 28,1 contro 12,5 prompt rispetto alla sola 9070, stesso budget RAM |
-| File di paging 65536 MB fisso su NVMe (C:), E: tolto | ⏳ impostato dall'utente, attivo solo dopo riavvio; poi rimisurare (atteso limite commit ~128 GiB) |
+| Un modello sulle due schede (plugin HIP 5.x) | ✅ dopo il riavvio (2026-10-26): 20,8 contro 16,3 tok/s decode e 40,5 contro 23,9 prompt rispetto alla sola 9070 (changelog 0.2.2-mi50.12) |
+| File di paging 65536 MB fisso su NVMe (C:), E: tolto | ✅ attivo dopo il riavvio: limite di commit 125,7 GiB, misure rifatte |
 | Integrazione delle due schede nell'app | ⏳ oggi solo server di prova |
 | Latenza per strato della MI50 (~2,9 s di attesa per risposta) | ⏳ da ottimizzare |
 | Monitor dell'app senza dati GPU | ⏳ ricontrollare con modello caricato (senza modello è atteso) |
@@ -41,7 +41,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 - HIP SDK installati: 5.7 e 6.4 in `C:\Program Files\AMD\ROCm`; `HIP_PATH` di sistema punta al 5.7.
 
 ## Prossimi passi, in ordine
-1. Dopo il riavvio: verificare limite di commit (~128 GiB) e rimisurare `strata-own.json` e `strata-dual.json` con bench.py.
+1. ✅ (2026-10-26) limite di commit 125,7 GiB, misure rifatte (changelog 0.2.2-mi50.12).
 2. Integrare nell'app: config dell'app con exe `C:\src\b1201\strata.exe`, lib_dirs HIP 6.4 e gli argomenti del plugin.
 3. Ridurre l'attesa per strato della MI50 (sovrapporre al lavoro di 9070 e CPU).
 

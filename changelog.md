@@ -1,4 +1,14 @@
-# changelog.md — versione 0.2.2-mi50.11 (2026-10-23 16:00)
+# changelog.md — versione 0.2.2-mi50.12 (2026-10-26 20:06)
+
+## 0.2.2-mi50.12 — 2026-10-26 20:06
+- Dopo il riavvio è attivo il file di paging 65536 MB fisso su C: (NVMe): limite di commit 125,7 GiB (prima 105,5), RAM libera
+  38,1 GiB su 61,7. Stessa richiesta di bench.py (`own_post_reboot.txt`, `dual_post_reboot.txt` in `C:\src\r9070-test`):
+  | stessa richiesta | prompt | decode |
+  |---|---|---|
+  | sola RX 9070 XT | 23,9 tok/s | 16,3 tok/s |
+  | 9070 + MI50 (plugin) | 40,5 tok/s | 20,8 tok/s |
+- Entrambe le configurazioni sono quasi raddoppiate rispetto a 0.2.2-mi50.10 (8,7 / 10,4 tok/s): con più commit e più RAM libera
+  l'engine tiene più esperti in RAM. Le due schede restano più veloci della sola 9070 (+28% decode, +70% prompt).
 
 ## 0.2.2-mi50.11 — 2026-10-23 16:00
 - context.md riscritto come punto di ripresa (stato, fatti verificati, percorsi, prossimi passi). Script di build copiati in
