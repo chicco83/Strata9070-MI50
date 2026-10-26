@@ -1,4 +1,25 @@
-# changelog.md — versione 0.2.2-mi50.12 (2026-10-26 20:06)
+# changelog.md — versione 0.2.2-mi50.13 (2026-10-26 20:45)
+
+## 0.2.2-mi50.13 — 2026-10-26 20:45
+- Unito upstream Strata 0.2.6 (577 commit, `upstream/main` 4b9e05a2) nel branch, commit di merge dc3a3b61. Il `main` del fork
+  è allineato a upstream. Conflitti: `CMakeLists.txt` (tenuti sia il target del plugin gfx906 sia i tool DFlash2 di upstream),
+  `OnboardingMemory.tsx` (presa la versione di upstream, che contiene già il nostro fix del wizard: commit 90a7aeea
+  «PR #3798 by chicco83»).
+- Build gfx906: aggiunte in `include/strata/platform/hip_compat/strata_hip.h` le mappature `cudaStreamCreateWithPriority` e
+  `cudaDeviceGetStreamPriorityRange` (le usa il drafter DFlash2 di upstream). Ricompilati `C:\src\b1201\strata.exe`,
+  `C:\src\b906c\strata.exe` e `strata_helper_gfx906.dll`; binari di prima in `C:\src\old026`.
+- Confronto alternato tra le build di prima e quelle nuove, due giri, stessa richiesta (`ab_*.txt` in `C:\src\r9070-test`), decode in tok/s:
+  | | build di prima | build 0.2.6 |
+  |---|---|---|
+  | sola 9070 | 11,6 / 11,6 | 11,8 / 12,6 |
+  | 9070 + MI50 | 13,3 / 14,4 | 14,1 / 14,1 |
+  Nessun peggioramento. Le velocità assolute di questa sessione sono più basse di quelle di 0.2.2-mi50.12 (16,3 / 20,8) per entrambe le
+  build: dipendono dallo stato del PC (RAM libera, programmi aperti), non dal codice. Le due schede restano più veloci (+15–20%).
+- DFlash2 (drafter di upstream per Qwen3.8-Flash-Next; scaricato con lo strumento di Strata in
+  `Documents\Strata\dflash2`, 0,76 GB): funziona solo da riga di comando su una scheda, non con `--serve` né con la MI50. Sulla sola
+  9070 (`df2bench.py`, 256 token, greedy) decode MTP contro DFlash2: chat 10,5 contro 8,1, codice 14,6 contro 13,3, JSON 6,3 contro
+  6,9 tok/s; usa ~500 MiB di VRAM in più (meno slot di cache esperti). Non adottato: in linea con la misura di upstream sulla R9700
+  (gfx1201, «slower on every prompt»).
 
 ## 0.2.2-mi50.12 — 2026-10-26 20:06
 - Dopo il riavvio è attivo il file di paging 65536 MB fisso su C: (NVMe): limite di commit 125,7 GiB (prima 105,5), RAM libera
