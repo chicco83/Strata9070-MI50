@@ -1,4 +1,23 @@
-# changelog.md — versione 0.2.2-mi50.14 (2026-10-26 21:03)
+# changelog.md — versione 0.2.2-mi50.15 (2026-10-26 21:39)
+
+## 0.2.2-mi50.15 — 2026-10-26 21:39
+- Scambi adattivi degli esperti anche sulla MI50 (ABI del plugin versione 3: `strata_helper_adapt`). Con `--remote-expert-opt`
+  l'engine passa al plugin l'uso degli esperti e cosa tiene già ogni GPU; il plugin sostituisce gli esperti freddi della MI50 con
+  quelli usati spesso che nessuna GPU tiene (stessa regola di `RemoteExpertOpt::adapt`, in `RemoteExperts::adapt_swaps`). Le copie
+  sono bloccanti, perché il blob arriva da una callback attraverso due runtime.
+- Prima prova con il massimo di upstream (96 scambi per giro, ogni 4 finestre): decode 17,7 contro 20,0 tok/s senza scambi
+  (~2.500 esperti copiati per richiesta sullo slot x4). Quindi un tetto proprio per il plugin, `STRATA_PLUGIN_ADAPT_SWAPS`
+  (predefinito 8); `STRATA_PLUGIN_ADAPT=0` spegne gli scambi sulla MI50; `STRATA_PLUGIN_ADAPT_LOG=1` scrive quanti ne fa.
+- Misura, 4 richieste diverse per server, due giri alternati (`bench4.py`, config `strata-dualopt-*.json` in `C:\src\r9070-test`),
+  media del decode sulle 8 richieste:
+  | scambi sulla MI50 | decode medio | tempo totale 8 richieste | esperti scambiati |
+  |---|---|---|---|
+  | nessuno (`STRATA_PLUGIN_ADAPT=0`) | 20,7 tok/s | 127,4 s | 0 |
+  | tetto 8 (predefinito) | 20,8 tok/s | 124,6 s | 1.904 |
+  | tetto 24 | 18,9 tok/s | 142,0 s | 5.904 |
+  Con il tetto 8 gli scambi non costano nulla ma su richieste brevi non danno un guadagno misurabile; restano accesi perché
+  seguono il cambio di argomento nelle conversazioni lunghe (non misurato). Se peggiorano: `STRATA_PLUGIN_ADAPT=0`.
+- Rollback: `git revert` di questo commit (torna l'ABI 2; ricompilare insieme engine e plugin).
 
 ## 0.2.2-mi50.14 — 2026-10-26 21:03
 - `--remote-expert-opt` funziona anche con il plugin della MI50 (ABI del plugin versione 2: `strata_helper_open2`,

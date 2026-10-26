@@ -6,6 +6,8 @@
 #include "strata/kernels/verify_kernels.hpp"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 namespace strata::core {
@@ -168,7 +170,23 @@ bool RemoteExpertOpt::adapt(const std::vector<float>& usage, const std::vector<i
     std::string err;
     for (auto& p : peers_) {
         auto& r = *p.remote;
-        if (r.plugin_) continue;   // strata-mi50 (2026-10-26): no swaps on a plugin tier yet (its cache fills at open only)
+        // strata-mi50 (2026-10-26): a plugin tier swaps in its own runtime (ABI 3), with blocking fills; was skipped (cache filled at open only)
+        if (r.plugin_) {
+            static const bool off = [] { const char* v = std::getenv("STRATA_PLUGIN_ADAPT"); return v && v[0] == '0'; }();
+            if (off) continue;   // STRATA_PLUGIN_ADAPT=0: the plugin tier keeps what it loaded at open (the ABI 2 behaviour)
+            // the plugin's fills are blocking and cross the helper's own link (the MI50: PCIe 4.0 x4), so far fewer per round than
+            // the in-process tiers' asynchronous max_swaps (96 measured 12% slower decode than no swaps); STRATA_PLUGIN_ADAPT_SWAPS=N
+            static const int cap = [] { const char* v = std::getenv("STRATA_PLUGIN_ADAPT_SWAPS"); return v ? std::atoi(v) : 8; }();
+            int swapped = 0;
+            if (!r.adapt_swaps(usage.data(), primary.data(), resident.data(), (int64_t) primary.size(), std::min(max_swaps, cap),
+                               [&](int64_t l, int64_t e) { return source.blob(l, e); }, swapped, err)) {
+                std::fprintf(stderr, "remote expert decode optimization: %s\n", err.c_str());
+                return false;
+            }
+            static const bool trace = [] { const char* v = std::getenv("STRATA_PLUGIN_ADAPT_LOG"); return v && v[0] == '1'; }();
+            if (trace && swapped > 0) std::fprintf(stderr, "strata-mi50: helper plugin swapped %d experts\n", swapped);
+            continue;
+        }
         std::vector<Swap> swaps;
         std::vector<std::pair<float, int32_t>> candidates, victims;
         for (int32_t l = 0; l < (int32_t) r.layers_present_.size(); ++l) {

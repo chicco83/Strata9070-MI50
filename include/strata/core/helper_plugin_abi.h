@@ -8,7 +8,8 @@
 #include <stdint.h>
 
 // 2 (2026-10-26): --remote-expert-opt through the plugin (open2, begin_opt, finish_opt); was 1
-#define STRATA_HELPER_ABI_VERSION 2
+// 3 (2026-10-26): the helper's adaptive expert swaps (adapt)
+#define STRATA_HELPER_ABI_VERSION 3
 
 #if defined(_WIN32)
 #define STRATA_HELPER_EXPORT __declspec(dllexport)
@@ -60,6 +61,13 @@ typedef int (*strata_helper_begin_opt_t)(void* h, int64_t layer, const float* x,
 /// After begin_opt: `sum` gets n_tok rows of H floats (this helper's weighted sum per token, zeros where it owns nothing) and
 /// `owned` n_tok * k flags (the (token, expert) entries that sum covers).
 typedef int (*strata_helper_finish_opt_t)(void* h, float* sum, uint8_t* owned, char* err, int err_len);
+
+// ---- version 3 (2026-10-26): RemoteExpertOpt::adapt for a plugin tier.  The engine passes the routing usage and the primary's
+// residency (n = n_layers * n_expert entries each) and the residency of every tier (`resident`, 1 = some GPU holds it), which the
+// plugin updates for the swaps it makes.  The plugin swaps up to `max_swaps` of its cold experts for hot ones no GPU holds, reading
+// the new blobs through `blob` and waiting for each copy, so no blob pointer is used after return.  `swapped` gets the count.
+typedef int (*strata_helper_adapt_t)(void* h, const float* usage, const int32_t* primary, uint8_t* resident, int64_t n,
+                                     int max_swaps, strata_helper_blob_fn blob, void* ctx, int* swapped, char* err, int err_len);
 
 #ifdef __cplusplus
 }

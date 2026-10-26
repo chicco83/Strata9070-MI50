@@ -47,6 +47,12 @@ public:
                    const std::function<const uint8_t*(int64_t, int64_t)>& blob,
                    std::vector<uint8_t>& claimed, std::string& err, bool auto_size, bool standalone);
 
+    /// strata-mi50 (2026-10-26): RemoteExpertOpt::adapt's swap rule for one helper, as a call that also crosses the plugin ABI
+    /// (version 3).  `usage`, `primary` and `resident` have n = layers * experts entries; `resident` is updated for the swaps
+    /// made.  Each new blob is copied and waited for before the next `blob` call.
+    bool adapt_swaps(const float* usage, const int32_t* primary, uint8_t* resident, int64_t n, int max_swaps,
+                     const std::function<const uint8_t*(int64_t, int64_t)>& blob, int& swapped, std::string& err);
+
     /// `kind` is the primary verifier's classification (-1 = CPU candidate),
     /// or null on the one-token path. Entries already served on CUDA0 are excluded.
     bool begin(int64_t layer, const float* x, const int32_t* ids, int64_t n_tok,

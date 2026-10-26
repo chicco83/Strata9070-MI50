@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.14 (2026-10-26 21:03)
+# context.md — versione 0.2.2-mi50.15 (2026-10-26 21:39)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -17,7 +17,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Latenza per strato della MI50 (~2,9 s di attesa per risposta) | ⏳ da ottimizzare |
 | Monitor dell'app senza dati GPU | ⏳ ricontrollare con modello caricato (senza modello è atteso) |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
-| `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); ⏳ scambi adattivi sulla MI50 non ancora |
+| `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
 | DFlash2 | ⛔ non adottato: più lento di MTP sulla 9070 e solo da riga di comando su una scheda |
 
 ## Fatti chiave (verificati)
@@ -49,11 +49,14 @@ PIANO_DUAL_GPU_2026-10-23.md.
    più `--remote-expert-opt`.
 3. Ridurre l'attesa per strato della MI50 (sovrapporre al lavoro di 9070 e CPU).
 4. ✅ (2026-10-26) `--remote-expert-opt` nel plugin (changelog 0.2.2-mi50.14). Da usare sempre con le due schede: config `strata-dualopt.json`.
-5. Facoltativo: scambi adattivi degli esperti anche sulla MI50 (`RemoteExpertOpt::adapt` attraverso il plugin).
+5. ✅ (2026-10-26) scambi adattivi sulla MI50 (changelog 0.2.2-mi50.15): tetto `STRATA_PLUGIN_ADAPT_SWAPS` 8, spegnibili con
+   `STRATA_PLUGIN_ADAPT=0`. Da rimisurare su una conversazione lunga che cambia argomento.
 
 ## Decisioni (con il perché)
 - Plugin nello stesso processo, non un processo separato con IPC né Vulkan: più semplice e più veloce (PIANO_DUAL_GPU).
 - Non usato il toolset MSVC 14.40: non si è installato; risolto usando clang 20 (HIP SDK 6.4) per la build gfx906.
+- Scambi sulla MI50 con tetto 8 per giro, non 96 come le schede nello stesso runtime (2026-10-26): le copie del plugin sono
+  bloccanti e passano dallo slot x4; con 96 il decode scende del 12%, con 24 del 9%, con 8 è pari a nessuno scambio.
 - DFlash2 non adottato (2026-10-26): sulla 9070 più lento di MTP su 2 prompt su 3, gira solo da riga di comando su una scheda
   (non con il server né con la MI50); upstream misura lo stesso sulla R9700 (changelog 0.2.2-mi50.13).
 - Codice: le modifiche per HIP 5.x / 6.4 sono limitate da `#if` alle build interessate; la forma precedente resta nel codice con data.

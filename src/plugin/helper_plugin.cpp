@@ -145,6 +145,17 @@ STRATA_HELPER_EXPORT int strata_helper_finish_opt(void* h, float* sum, uint8_t* 
     return 0;
 }
 
+STRATA_HELPER_EXPORT int strata_helper_adapt(void* h, const float* usage, const int32_t* primary, uint8_t* resident, int64_t n,
+                                             int max_swaps, strata_helper_blob_fn blob, void* ctx, int* swapped, char* err, int err_len) {
+    int got = 0;
+    std::string e;
+    const bool ok = ((Tier*) h)->remote.adapt_swaps(usage, primary, resident, n, max_swaps,
+                                                    [&](int64_t l, int64_t x) { return blob(ctx, l, x); }, got, e);
+    if (swapped != nullptr) *swapped = got;
+    if (!ok) { put(err, err_len, e); return 1; }
+    return 0;
+}
+
 STRATA_HELPER_EXPORT int strata_helper_owns(void* h, int64_t index) { return ((Tier*) h)->remote.owns(index) ? 1 : 0; }
 
 STRATA_HELPER_EXPORT int strata_helper_holds(void* h, int64_t layer, int32_t expert) {
