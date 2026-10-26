@@ -1,4 +1,12 @@
-# changelog.md — versione 0.2.2-mi50.19 (2026-10-27 00:16)
+# changelog.md — versione 0.2.2-mi50.20 (2026-10-27 00:22)
+
+## 0.2.2-mi50.20 — 2026-10-27 00:22
+- Analisi del secondo Record log (7 min, 4 richieste nell'app con `--short-read 512` attivo, contesto 11–14K):
+  - scrittura 29,5–38,1 tok/s; 9070 all'85–91%, MI50 solo all'11–12% (attesa della MI50 16–18% del tempo di scrittura: il collo è la latenza per strato sullo slot x4, non il calcolo della MI50); CPU ~53%;
+  - anche in scrittura il disco legge 125–310 MB/s: i 27,7 GiB di esperti in RAM non bastano (15.003 e 25.783 letture dal file nelle due richieste lunghe); cache esperti della 9070 all'81%, il 63% degli esperti instradati passa da PCIe o dalla MI50;
+  - lettura di un prompt da 11.160 token: 26,5 s (422 tok/s), CPU 80%, disco 2,7 GB/s, 9070 al 28%, MI50 ferma;
+  - turno da 57 token letto in 0,69 s; nessun turno tra 64 e 512 token nella sessione, quindi l'effetto di `--short-read 512` nell'app non è ancora misurato; un turno da 1.880 token (a blocchi) in 7,9 s;
+  - di nuovo l'avviso di VRAM (983 MiB liberi all'inizio di una richiesta); temperature massime 49 °C 9070, 37 °C Pro VII.
 
 ## 0.2.2-mi50.19 — 2026-10-27 00:16
 - Pulsante **Record log** unico per tutta l'app, sempre in alto al centro della finestra su ogni schermata e chat (`components/RecordLogButton.tsx`, montato in `app/App.tsx`, stile `.record-log` in `styles/monitor.css`); durante la registrazione è bordato di rosso con il cerchio rosso che pulsa e il conteggio dei secondi. Tolto dall'intestazione del Monitor (versione del 2026-10-26). Installato nell'app; non ancora visto dall'utente.

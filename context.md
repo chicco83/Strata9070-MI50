@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.19 (2026-10-27 00:16)
+# context.md — versione 0.2.2-mi50.20 (2026-10-27 00:22)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -19,7 +19,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | PCIe MB/s e consumo in watt per le AMD su Windows | ⛔ nessuna fonte affidabile (D3DKMT, ADL, contatori) |
 | Effetto della dimensione del contesto sulla velocità (64K → 128K e oltre) | ⏳ punto aperto: la KV sta tutta sulla 9070, più contesto = meno esperti in VRAM |
 | Turni brevi lenti: 82–255 token nuovi letti in 3,5–5,5 s | ✅ causa: soglia `--short-read` 64; con 512 ~125 token in 2,0 s invece di 6,5 (changelog 0.2.2-mi50.18); ⏳ da provare nell'app |
-| Lettura dei prompt grandi limitata da disco (2–3 GB/s) e CPU, MI50 ferma | ⏳ idee: leggere dalla VRAM della MI50 gli esperti che tiene (oggi il plugin non serve `copy_cached_blobs`), più RAM per gli esperti |
+| Lettura dei prompt grandi limitata da disco (2–3 GB/s) e CPU, MI50 ferma; anche in scrittura 125–310 MB/s dal disco | ⏳ idee: leggere dalla VRAM della MI50 gli esperti che tiene (oggi il plugin non serve `copy_cached_blobs`), più RAM per gli esperti |
 | VRAM libera a 752–945 MiB all'inizio delle richieste | ⏳ valutare `--vram-reserve-mib` 1856 come consiglia il motore |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
