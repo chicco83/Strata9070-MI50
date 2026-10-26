@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.13 (2026-10-26 20:45)
+# context.md — versione 0.2.2-mi50.14 (2026-10-26 21:03)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -17,6 +17,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Latenza per strato della MI50 (~2,9 s di attesa per risposta) | ⏳ da ottimizzare |
 | Monitor dell'app senza dati GPU | ⏳ ricontrollare con modello caricato (senza modello è atteso) |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
+| `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); ⏳ scambi adattivi sulla MI50 non ancora |
 | DFlash2 | ⛔ non adottato: più lento di MTP sulla 9070 e solo da riga di comando su una scheda |
 
 ## Fatti chiave (verificati)
@@ -37,17 +38,18 @@ PIANO_DUAL_GPU_2026-10-23.md.
   fissa, stampa velocità e ferma tutto. Config: `strata-own.json` (sola 9070), `strata-dual.json` (9070 + MI50),
   `strata-official.json` (engine ufficiale). MI50 da sola: `C:\src\mi50-test\strata-mi50.json`.
 - Due schede: engine `C:\src\b1201\strata.exe` + argomenti `--expert-cache-device1 auto --expert-cache-plugin
-  C:\src\b906c\strata_helper_gfx906.dll`, con `C:\Program Files\AMD\ROCm\6.4\bin` nel PATH.
+  C:\src\b906c\strata_helper_gfx906.dll --remote-expert-opt`, con `C:\Program Files\AMD\ROCm\6.4\bin` nel PATH.
 - App installata: interfaccia sostituita con la build del fix wizard; originale in
   `%LOCALAPPDATA%\Programs\Strata\host\dist.orig` (rollback: chiudere l'app, cancellare `dist`, rinominare `dist.orig` in `dist`).
 - HIP SDK installati: 5.7 e 6.4 in `C:\Program Files\AMD\ROCm`; `HIP_PATH` di sistema punta al 5.7.
 
 ## Prossimi passi, in ordine
 1. ✅ (2026-10-26) limite di commit 125,7 GiB, misure rifatte (changelog 0.2.2-mi50.12).
-2. Integrare nell'app: config dell'app con exe `C:\src\b1201\strata.exe`, lib_dirs HIP 6.4 e gli argomenti del plugin.
+2. Integrare nell'app: config dell'app con exe `C:\src\b1201\strata.exe`, lib_dirs HIP 6.4 e gli argomenti del plugin
+   più `--remote-expert-opt`.
 3. Ridurre l'attesa per strato della MI50 (sovrapporre al lavoro di 9070 e CPU).
-4. Supportare `--remote-expert-opt` nel plugin: la MI50 sommerebbe i risultati dei suoi esperti e rimanderebbe un vettore per
-   parola, meno traffico sullo slot PCIe 4.0 x4 (docs/SECOND_GPU.md di upstream).
+4. ✅ (2026-10-26) `--remote-expert-opt` nel plugin (changelog 0.2.2-mi50.14). Da usare sempre con le due schede: config `strata-dualopt.json`.
+5. Facoltativo: scambi adattivi degli esperti anche sulla MI50 (`RemoteExpertOpt::adapt` attraverso il plugin).
 
 ## Decisioni (con il perché)
 - Plugin nello stesso processo, non un processo separato con IPC né Vulkan: più semplice e più veloce (PIANO_DUAL_GPU).

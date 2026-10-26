@@ -79,6 +79,11 @@ public:
 private:
     friend class RemoteExpertOpt;
     void* plugin_ = nullptr;   ///< the plugin's handle when this tier runs in the helper plugin (set_plugin)
+    // 2026-10-26: --remote-expert-opt through the plugin: the window's reduced rows and owned flags (finish_opt), and whether
+    // begin() asked the plugin to reduce
+    std::vector<float> plugin_sum_;
+    std::vector<uint8_t> plugin_owned_;
+    bool plugin_reduced_ = false;
     bool plugin_owns(int64_t index) const;
     bool plugin_holds(int64_t layer, int32_t expert) const;
     int64_t plugin_i(int k) const;

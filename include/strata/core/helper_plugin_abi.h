@@ -7,7 +7,8 @@
 #pragma once
 #include <stdint.h>
 
-#define STRATA_HELPER_ABI_VERSION 1
+// 2 (2026-10-26): --remote-expert-opt through the plugin (open2, begin_opt, finish_opt); was 1
+#define STRATA_HELPER_ABI_VERSION 2
 
 #if defined(_WIN32)
 #define STRATA_HELPER_EXPORT __declspec(dllexport)
@@ -45,6 +46,20 @@ typedef int (*strata_helper_owns_t)(void* h, int64_t index);
 typedef int (*strata_helper_holds_t)(void* h, int64_t layer, int32_t expert);
 /// Counters, in this order: resident, computed, launched_layers, returned_bytes, full_row_bytes; doubles: gib, ms_begin, ms_wait.
 typedef void (*strata_helper_stats_t)(void* h, int64_t* counters5, double* doubles3);
+
+// ---- version 2 (2026-10-26): --remote-expert-opt.  The helper reduces its expert rows to one weighted sum per token on its GPU
+// (RemoteExpertOpt in the plugin's runtime), so one row of H floats per token crosses PCIe instead of one per owned (token, expert).
+/// strata_helper_open with `reduce` != 0: the tier can reduce (begin_opt / finish_opt).
+typedef void* (*strata_helper_open2_t)(int slots, const int32_t* ranked, int64_t n_ranked, strata_helper_primary_fn primary,
+                                       strata_helper_blob_fn blob, void* ctx, uint8_t* claimed, int auto_size, int reduce,
+                                       char* err, int err_len);
+/// strata_helper_begin, reducing with the router weights `weights` (n_tok * k floats, the window's tokens).
+typedef int (*strata_helper_begin_opt_t)(void* h, int64_t layer, const float* x, const int32_t* ids, int64_t n_tok, int64_t k,
+                                         const int32_t* kind, const int32_t* primary_res, const float* weights,
+                                         char* err, int err_len);
+/// After begin_opt: `sum` gets n_tok rows of H floats (this helper's weighted sum per token, zeros where it owns nothing) and
+/// `owned` n_tok * k flags (the (token, expert) entries that sum covers).
+typedef int (*strata_helper_finish_opt_t)(void* h, float* sum, uint8_t* owned, char* err, int err_len);
 
 #ifdef __cplusplus
 }

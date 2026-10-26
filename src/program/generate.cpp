@@ -3373,8 +3373,9 @@ int main(int argc, char** argv) {
     if (!o.expert_cache_plugin.empty()) {
         // strata-mi50: the helper tier CUDA1 (--expert-cache-device1) runs in a plugin that sees a GPU this runtime does not
         // (Windows: the Radeon Pro VII / MI50 under HIP 5.x beside an RX 9070 XT under HIP 6/7).  Only the first helper.
-        if (o.expert_cache_remote[0] <= 0 || o.expert_cache_remote[1] > 0 || o.remote_expert_opt) {
-            std::fprintf(stderr, "strata generate: --expert-cache-plugin needs --expert-cache-device1 (only that helper; no --remote-expert-opt)\n");
+        // 2026-10-26: --remote-expert-opt is allowed (plugin ABI 2 reduces in the plugin); was refused with the plugin
+        if (o.expert_cache_remote[0] <= 0 || o.expert_cache_remote[1] > 0) {
+            std::fprintf(stderr, "strata generate: --expert-cache-plugin needs --expert-cache-device1 (only that helper)\n");
             return 2;
         }
         std::string dll = o.expert_cache_plugin;

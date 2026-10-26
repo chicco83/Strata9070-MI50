@@ -5,6 +5,7 @@
 // ABI: include/strata/core/helper_plugin_abi.h.  Plan: PIANO_DUAL_GPU_2026-10-23.md.
 #include "strata/core/helper_plugin_abi.h"
 #include "strata/core/remote_experts.hpp"
+#include "strata/core/remote_expert_opt.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
 
 #include <cuda_runtime.h>
@@ -30,6 +31,9 @@ void put(char* err, int len, const std::string& msg) {
 
 struct Tier {
     strata::core::RemoteExperts remote;
+    // 2026-10-26: --remote-expert-opt (ABI 2).  Declared after `remote`, so it is destroyed first (its destructor uses remote).
+    std::unique_ptr<strata::core::RemoteExpertOpt> opt;
+    int64_t tokens = 0, k = 0;   ///< the window begin_opt reduced
 };
 }  // namespace
 
@@ -66,9 +70,9 @@ STRATA_HELPER_EXPORT int strata_helper_init(const char* pack_dir, int64_t n_laye
     return 0;
 }
 
-STRATA_HELPER_EXPORT void* strata_helper_open(int slots, const int32_t* ranked, int64_t n_ranked, strata_helper_primary_fn primary,
-                                              strata_helper_blob_fn blob, void* ctx, uint8_t* claimed, int auto_size,
-                                              char* err, int err_len) {
+STRATA_HELPER_EXPORT void* strata_helper_open2(int slots, const int32_t* ranked, int64_t n_ranked, strata_helper_primary_fn primary,
+                                               strata_helper_blob_fn blob, void* ctx, uint8_t* claimed, int auto_size, int reduce,
+                                               char* err, int err_len) {
     State& st = state();
     if (!st.layout) { put(err, err_len, "strata_helper_init with the model's layers first"); return nullptr; }
     std::vector<std::pair<int32_t, int32_t>> pairs;
@@ -78,13 +82,24 @@ STRATA_HELPER_EXPORT void* strata_helper_open(int slots, const int32_t* ranked, 
     std::vector<uint8_t> taken(claimed, claimed + n);
     auto tier = std::make_unique<Tier>();
     std::string e;
+    if (reduce != 0) {   // attach before open: open sizes the metadata upload for the reduction
+        tier->opt = std::make_unique<strata::core::RemoteExpertOpt>();
+        tier->opt->attach(tier->remote);
+    }
     const bool ok = tier->remote.open_with(
         st.device, slots, st.layers, st.experts, pairs,
         [&](int32_t l, int32_t x) { return primary != nullptr && primary(ctx, l, x) != 0; },
         [&](int64_t l, int64_t x) { return blob(ctx, l, x); }, taken, e, auto_size != 0, true);
     if (!ok) { put(err, err_len, e); return nullptr; }
+    if (tier->opt && !tier->opt->init(e)) { put(err, err_len, e); return nullptr; }
     std::memcpy(claimed, taken.data(), n);
     return tier.release();
+}
+
+STRATA_HELPER_EXPORT void* strata_helper_open(int slots, const int32_t* ranked, int64_t n_ranked, strata_helper_primary_fn primary,
+                                              strata_helper_blob_fn blob, void* ctx, uint8_t* claimed, int auto_size,
+                                              char* err, int err_len) {
+    return strata_helper_open2(slots, ranked, n_ranked, primary, blob, ctx, claimed, auto_size, 0, err, err_len);
 }
 
 STRATA_HELPER_EXPORT void strata_helper_close(void* h) { delete (Tier*) h; }
@@ -99,6 +114,34 @@ STRATA_HELPER_EXPORT int strata_helper_begin(void* h, int64_t layer, const float
 STRATA_HELPER_EXPORT int strata_helper_finish(void* h, float* out, char* err, int err_len) {
     std::string e;
     if (!((Tier*) h)->remote.finish(out, e)) { put(err, err_len, e); return 1; }
+    return 0;
+}
+
+STRATA_HELPER_EXPORT int strata_helper_begin_opt(void* h, int64_t layer, const float* x, const int32_t* ids, int64_t n_tok, int64_t k,
+                                                 const int32_t* kind, const int32_t* primary_res, const float* weights,
+                                                 char* err, int err_len) {
+    Tier& t = *(Tier*) h;
+    if (!t.opt || weights == nullptr) { put(err, err_len, "helper plugin: begin_opt on a tier opened without reduce"); return 1; }
+    t.opt->begin(weights, 0, (int) n_tok);   // the plugin's own sum covers this window alone
+    t.tokens = n_tok;
+    t.k = k;
+    std::string e;
+    if (!t.remote.begin(layer, x, ids, n_tok, k, kind, primary_res, e)) { t.opt->end(); put(err, err_len, e); return 1; }
+    return 0;
+}
+
+STRATA_HELPER_EXPORT int strata_helper_finish_opt(void* h, float* sum, uint8_t* owned, char* err, int err_len) {
+    Tier& t = *(Tier*) h;
+    if (!t.opt) { put(err, err_len, "helper plugin: finish_opt on a tier opened without reduce"); return 1; }
+    std::string e;
+    // with the reduction active finish() adds the reduced rows to the plugin's sum (zeroed by begin) and writes nothing to `out`
+    const bool ok = t.remote.finish(nullptr, e);
+    if (ok) {
+        std::memcpy(sum, t.opt->host_sum(), (size_t) t.tokens * (size_t) strata::kernels::cpu::H * sizeof(float));
+        for (int64_t i = 0; i < t.tokens * t.k; ++i) owned[i] = t.remote.owns(i) ? 1 : 0;
+    }
+    t.opt->end();
+    if (!ok) { put(err, err_len, e); return 1; }
     return 0;
 }
 

@@ -1,4 +1,24 @@
-# changelog.md — versione 0.2.2-mi50.13 (2026-10-26 20:45)
+# changelog.md — versione 0.2.2-mi50.14 (2026-10-26 21:03)
+
+## 0.2.2-mi50.14 — 2026-10-26 21:03
+- `--remote-expert-opt` funziona anche con il plugin della MI50 (ABI del plugin versione 2: `strata_helper_open2`,
+  `strata_helper_begin_opt`, `strata_helper_finish_opt` in `include/strata/core/helper_plugin_abi.h`). La MI50 somma sulla sua GPU
+  i risultati dei suoi esperti con i pesi del router e rimanda una riga per token invece di una per (token, esperto); l'engine
+  aggiunge quella somma al risultato della 9070 (`RemoteExpertOpt::accumulate`). File: `src/plugin/helper_plugin.cpp`,
+  `src/core/remote_experts.cpp`, `src/core/remote_expert_opt.cu`, `include/strata/core/remote_expert_opt.hpp`,
+  `include/strata/core/remote_experts.hpp`, `src/program/generate.cpp` (tolto il rifiuto di `--remote-expert-opt` con il plugin).
+- Limite voluto della prima versione: gli scambi adattivi degli esperti (`RemoteExpertOpt::adapt`) non toccano la cache della
+  MI50 (si riempie solo all'avvio); la 9070 continua ad adattare la sua.
+- Misure, stessa richiesta, alternate, due giri (`opt_*.txt` in `C:\src\r9070-test`, config `strata-dualopt.json` = `strata-dual.json`
+  + `--remote-expert-opt`):
+  | 9070 + MI50 | prompt | decode | traffico di ritorno dalla MI50 | attesa della MI50 |
+  |---|---|---|---|---|
+  | senza opt | 34,7 / 36,4 tok/s | 14,1 / 15,3 tok/s | ~600 MiB a richiesta | ~2,8 s |
+  | con `--remote-expert-opt` | 43,0 / 41,3 tok/s | 18,7 / 19,1 tok/s | 149–185 MiB | 1,3–1,6 s |
+  Decode +29%, prompt +18%. Le risposte sono corrette; una parola può cambiare (cambia l'ordine delle somme in virgola mobile,
+  come documenta upstream). Con l'opzione il server spegne l'«adaptive overlap» (riga nel log, comportamento di upstream).
+- Rollback: `git revert` di questo commit (torna l'ABI 1; ricompilare insieme engine e plugin, l'engine rifiuta un plugin di
+  un'altra versione ABI).
 
 ## 0.2.2-mi50.13 — 2026-10-26 20:45
 - Unito upstream Strata 0.2.6 (577 commit, `upstream/main` 4b9e05a2) nel branch, commit di merge dc3a3b61. Il `main` del fork

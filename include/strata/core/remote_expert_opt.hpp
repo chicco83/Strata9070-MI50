@@ -32,6 +32,8 @@ public:
                    const int32_t* hit_rows, const int32_t* count, void* stream) const;
     void combine(float* dst, float* scratch, int token_begin, int tokens,
                  const uint32_t* skip, uint32_t ring, void* stream) const;
+    /// strata-mi50 (2026-10-26): the current window's summed rows in host memory (the helper plugin hands them back).
+    const float* host_sum() const;
 
 private:
     friend class RemoteExperts;

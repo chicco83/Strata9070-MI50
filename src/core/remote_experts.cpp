@@ -87,6 +87,9 @@ struct HelperPlugin {
     strata_helper_owns_t owns = nullptr;
     strata_helper_holds_t holds = nullptr;
     strata_helper_stats_t stats = nullptr;
+    strata_helper_open2_t open2 = nullptr;           // ABI 2 (2026-10-26): --remote-expert-opt
+    strata_helper_begin_opt_t begin_opt = nullptr;
+    strata_helper_finish_opt_t finish_opt = nullptr;
 };
 HelperPlugin& helper_plugin() { static HelperPlugin p; return p; }
 
@@ -112,7 +115,11 @@ bool load_helper_plugin(std::string& err) {
     p.owns = (strata_helper_owns_t) sym("strata_helper_owns");
     p.holds = (strata_helper_holds_t) sym("strata_helper_holds");
     p.stats = (strata_helper_stats_t) sym("strata_helper_stats");
-    if (!p.init || !p.open || !p.close || !p.begin || !p.finish || !p.owns || !p.holds || !p.stats) {
+    p.open2 = (strata_helper_open2_t) sym("strata_helper_open2");
+    p.begin_opt = (strata_helper_begin_opt_t) sym("strata_helper_begin_opt");
+    p.finish_opt = (strata_helper_finish_opt_t) sym("strata_helper_finish_opt");
+    if (!p.init || !p.open || !p.close || !p.begin || !p.finish || !p.owns || !p.holds || !p.stats ||
+        !p.open2 || !p.begin_opt || !p.finish_opt) {
         err = "helper plugin: " + p.dll + " lacks an entry point";
         return false;
     }
@@ -230,10 +237,15 @@ bool RemoteExperts::open(int device, int slots, int64_t layers, int64_t experts,
         flat.reserve(ranked.size() * 2);
         for (const auto& pr : ranked) { flat.push_back(pr.first); flat.push_back(pr.second); }
         PluginCtx ctx{&primary, &source};
-        plugin_ = p.open(slots, flat.data(), (int64_t) ranked.size(), plugin_primary_cb, plugin_blob_cb, &ctx, claimed.data(),
-                         auto_size ? 1 : 0, e, (int) sizeof e);
+        // 2026-10-26: open2 with reduce when --remote-expert-opt attached an optimizer (was p.open, no reduction)
+        plugin_ = p.open2(slots, flat.data(), (int64_t) ranked.size(), plugin_primary_cb, plugin_blob_cb, &ctx, claimed.data(),
+                          auto_size ? 1 : 0, remote_opt_ ? 1 : 0, e, (int) sizeof e);
         if (plugin_ == nullptr) { err = std::string("helper plugin: ") + e; return false; }
         n_expert_ = experts;
+        if (remote_opt_) {
+            plugin_sum_.assign((size_t) strata::kernels::cpu::MAXT * H, 0.0f);
+            plugin_owned_.assign((size_t) CAP, 0);
+        }
         return true;
     }
     return open_with(device, slots, layers, experts, ranked,
@@ -376,7 +388,12 @@ bool RemoteExperts::begin(int64_t layer, const float* x, const int32_t* ids, int
                           std::string& err) {
     if (plugin_) {
         char e[512] = {};
-        if (helper_plugin().begin(plugin_, layer, x, ids, n_tok, k, kind, primary_res, e, (int) sizeof e) != 0) { err = e; return false; }
+        // 2026-10-26: --remote-expert-opt - the plugin reduces with the window's router weights (begin_opt)
+        plugin_reduced_ = remote_opt_ && remote_opt_->active();
+        const int rc = plugin_reduced_
+            ? helper_plugin().begin_opt(plugin_, layer, x, ids, n_tok, k, kind, primary_res, remote_opt_->weights_, e, (int) sizeof e)
+            : helper_plugin().begin(plugin_, layer, x, ids, n_tok, k, kind, primary_res, e, (int) sizeof e);
+        if (rc != 0) { err = e; plugin_reduced_ = false; return false; }
         return true;
     }
     // cumulative host time in here (staging and launches), reported per request by the driver
@@ -474,6 +491,12 @@ bool RemoteExperts::begin(int64_t layer, const float* x, const int32_t* ids, int
 bool RemoteExperts::finish(float* out, std::string& err) {
     if (plugin_) {
         char e[512] = {};
+        if (plugin_reduced_) {   // 2026-10-26: one summed row per token back, added into the optimizer's mapped sum
+            plugin_reduced_ = false;
+            if (helper_plugin().finish_opt(plugin_, plugin_sum_.data(), plugin_owned_.data(), e, (int) sizeof e) != 0) { err = e; return false; }
+            remote_opt_->accumulate(*this);
+            return true;
+        }
         if (helper_plugin().finish(plugin_, out, e, (int) sizeof e) != 0) { err = e; return false; }
         return true;
     }
