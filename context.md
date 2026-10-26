@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.15 (2026-10-26 21:39)
+# context.md — versione 0.2.2-mi50.16 (2026-10-26 23:21)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -13,7 +13,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Engine wave32 gfx1201 compilato con HIP SDK 6.4 | ✅ uguale all'ufficiale (10,9 contro 10,8 tok/s) |
 | Un modello sulle due schede (plugin HIP 5.x) | ✅ dopo il riavvio (2026-10-26): 20,8 contro 16,3 tok/s decode e 40,5 contro 23,9 prompt rispetto alla sola 9070 (changelog 0.2.2-mi50.12) |
 | File di paging 65536 MB fisso su NVMe (C:), E: tolto | ✅ attivo dopo il riavvio: limite di commit 125,7 GiB, misure rifatte |
-| Integrazione delle due schede nell'app | ⏳ oggi solo server di prova |
+| Integrazione delle due schede nell'app | ✅ app 0.2.6: componente `0.1.51-mi50` fissato, 32,5 tok/s nell'app (changelog 0.2.2-mi50.16) |
 | Latenza per strato della MI50 (~2,9 s di attesa per risposta) | ⏳ da ottimizzare |
 | Monitor dell'app senza dati GPU | ⏳ ricontrollare con modello caricato (senza modello è atteso) |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
@@ -39,14 +39,15 @@ PIANO_DUAL_GPU_2026-10-23.md.
   `strata-official.json` (engine ufficiale). MI50 da sola: `C:\src\mi50-test\strata-mi50.json`.
 - Due schede: engine `C:\src\b1201\strata.exe` + argomenti `--expert-cache-device1 auto --expert-cache-plugin
   C:\src\b906c\strata_helper_gfx906.dll --remote-expert-opt`, con `C:\Program Files\AMD\ROCm\6.4\bin` nel PATH.
-- App installata: interfaccia sostituita con la build del fix wizard; originale in
-  `%LOCALAPPDATA%\Programs\Strata\host\dist.orig` (rollback: chiudere l'app, cancellare `dist`, rinominare `dist.orig` in `dist`).
+- App installata 0.2.6 (aggiornata il 2026-10-26; la sostituzione dell'interfaccia del 23/10 non c'è più). Engine: componente
+  `%LOCALAPPDATA%\Strata\components\engine\0.1.51-mi50-windows-x86_64-hip-rx9070`, fissato in
+  `components\.updates\state.json`; opzioni della MI50 in `"user_args"` di `%LOCALAPPDATA%\Strata\install\strata-iq3_s.json`.
 - HIP SDK installati: 5.7 e 6.4 in `C:\Program Files\AMD\ROCm`; `HIP_PATH` di sistema punta al 5.7.
 
 ## Prossimi passi, in ordine
 1. ✅ (2026-10-26) limite di commit 125,7 GiB, misure rifatte (changelog 0.2.2-mi50.12).
-2. Integrare nell'app: config dell'app con exe `C:\src\b1201\strata.exe`, lib_dirs HIP 6.4 e gli argomenti del plugin
-   più `--remote-expert-opt`.
+2. ✅ (2026-10-26) integrato nell'app come componente fissato (changelog 0.2.2-mi50.16). Dopo ogni nuova build: rilanciare
+   `python -I packaging/make_component_mi50.py --pin` (con l'app senza modello caricato).
 3. Ridurre l'attesa per strato della MI50 (sovrapporre al lavoro di 9070 e CPU).
 4. ✅ (2026-10-26) `--remote-expert-opt` nel plugin (changelog 0.2.2-mi50.14). Da usare sempre con le due schede: config `strata-dualopt.json`.
 5. ✅ (2026-10-26) scambi adattivi sulla MI50 (changelog 0.2.2-mi50.15): tetto `STRATA_PLUGIN_ADAPT_SWAPS` 8, spegnibili con
@@ -57,6 +58,8 @@ PIANO_DUAL_GPU_2026-10-23.md.
 - Non usato il toolset MSVC 14.40: non si è installato; risolto usando clang 20 (HIP SDK 6.4) per la build gfx906.
 - Scambi sulla MI50 con tetto 8 per giro, non 96 come le schede nello stesso runtime (2026-10-26): le copie del plugin sono
   bloccanti e passano dallo slot x4; con 96 il decode scende del 12%, con 24 del 9%, con 8 è pari a nessuno scambio.
+- Engine nell'app come componente fissato, non come percorso nella config (2026-10-26): il setup dell'app riscrive `exe` e
+  `lib_dirs` a ogni caricamento; il componente sopravvive e passa il controllo SHA-256 dell'app.
 - DFlash2 non adottato (2026-10-26): sulla 9070 più lento di MTP su 2 prompt su 3, gira solo da riga di comando su una scheda
   (non con il server né con la MI50); upstream misura lo stesso sulla R9700 (changelog 0.2.2-mi50.13).
 - Codice: le modifiche per HIP 5.x / 6.4 sono limitate da `#if` alle build interessate; la forma precedente resta nel codice con data.

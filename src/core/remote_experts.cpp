@@ -98,6 +98,11 @@ bool load_helper_plugin(std::string& err) {
     HelperPlugin& p = helper_plugin();
     if (p.loaded) return true;
 #if defined(_WIN32)
+    // 2026-10-26: the driver's HIP 5.x runtime first, with its dependencies from System32 only.  It imports amd_comgr.dll by
+    // that name, and an engine package folder can hold another one (the official package's HIP 7 copy beside strata.exe):
+    // loaded from there, the HIP 5.x runtime fails (cudaMemGetInfo failed in the plugin).  The plugin's import then binds
+    // to this already loaded module.
+    LoadLibraryExA("amdhip64.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     // the plugin's own folder first: its HIP 5.x libraries (hipblas.dll, rocblas.dll) sit beside it or on PATH
     HMODULE m = LoadLibraryExA(p.dll.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (m == nullptr) m = LoadLibraryA(p.dll.c_str());

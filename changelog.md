@@ -1,4 +1,28 @@
-# changelog.md — versione 0.2.2-mi50.15 (2026-10-26 21:39)
+# changelog.md — versione 0.2.2-mi50.16 (2026-10-26 23:21)
+
+## 0.2.2-mi50.16 — 2026-10-26 23:21
+- **Le due schede nell'app Strata** (app 0.2.6, Control 0.1.51, aggiornata dall'utente). Verificato nell'app: modello caricato con
+  la MI50 (15,36 GiB di esperti), conversazione di 21.407 token letta a 598 tok/s, risposta a **32,5 tok/s**.
+- Come: l'app avvia `component:strata-engine` e il suo setup riscrive `exe` e `lib_dirs` a ogni caricamento, quindi un percorso
+  scritto a mano non dura. Il nostro engine è un componente dell'app, `%LOCALAPPDATA%\Strata\components\engine\
+  0.1.51-mi50-windows-x86_64-hip-rx9070`: pacchetto ufficiale 0.1.50 (lettori di immagini, rilevamento GPU) con il nostro
+  `strata.exe` (HIP 6.4), le librerie HIP 6.4 (`amdhip64_6`, `amd_comgr_2`, `hipblaslt`, `hipblas`, `rocblas`, `hiprtc`, librerie
+  gfx1201 di hipBLASLt e rocBLAS) e `strata_helper_gfx906.dll`; manifest con lo SHA-256 di ogni file (l'app li verifica a ogni
+  avvio), non firmato; fissato con `"pinned"` in `components\.updates\state.json`. Script: `packaging/make_component_mi50.py`
+  (`--pin`, `--unpin`). Le opzioni della MI50 stanno in `"user_args"` della config del modello, che l'app conserva:
+  `--expert-cache-device1 auto --expert-cache-plugin <componente>\strata_helper_gfx906.dll --remote-expert-opt`.
+- Due conflitti di DLL nella cartella del pacchetto, risolti:
+  - il runtime HIP 5 della MI50 (`amdhip64.dll` del driver) importa `amd_comgr.dll` e prendeva la copia HIP 7 del pacchetto
+    («cudaMemGetInfo failed» nel plugin): `src/core/remote_experts.cpp` carica `amdhip64.dll` da System32 con
+    `LOAD_LIBRARY_SEARCH_SYSTEM32` prima del plugin;
+  - `hipblas.dll` / `rocblas.dll` sono caricati in ritardo da `strata.exe` e venivano presi da `rocm\bin` (HIP 7): eccezione
+    0xC06D007F; ora le copie 6.4 stanno accanto a `strata.exe`.
+- Il setup della 0.2.6 al primo caricamento ha scritto `--max-context 524288 --rope-scaling yarn` (512K) mentre l'interfaccia
+  mostrava 64K: la KV non lasciava VRAM alla cache esperti. Riportato a 65536 in `args` e `args_written`. Causa non chiarita.
+- Il pannello Models («This computer») mostra solo la 9070 (elenco dell'engine ufficiale, runtime HIP 7); il Monitor vede due GPU.
+- Rollback: `python -I packaging/make_component_mi50.py --unpin` e togliere le tre opzioni da `"user_args"` (backup:
+  `strata-iq3_s.json.bak-*`, `state.json.bak-2026-10-26`). Un aggiornamento dell'engine ufficiale non tocca il pin finché il
+  nostro componente è utilizzabile.
 
 ## 0.2.2-mi50.15 — 2026-10-26 21:39
 - Scambi adattivi degli esperti anche sulla MI50 (ABI del plugin versione 3: `strata_helper_adapt`). Con `--remote-expert-opt`

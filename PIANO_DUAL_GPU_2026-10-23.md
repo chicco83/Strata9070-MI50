@@ -1,4 +1,4 @@
-# PIANO_DUAL_GPU — versione 6 (2026-10-26 21:39)
+# PIANO_DUAL_GPU — versione 7 (2026-10-26 23:21)
 
 Obiettivo: un solo modello che usa la VRAM di entrambe le schede (RX 9070 XT gfx1201 + Radeon Pro VII / MI50 gfx906) su Windows.
 
@@ -32,7 +32,7 @@ sono build diverse).
 | 4 | Misure e velocità | ✅ con file di paging 64 GB e riavvio: 20,8 contro 16,3 tok/s decode, 40,5 contro 23,9 prompt; ⏳ ottimizzare la latenza per strato |
 | 4b | `--remote-expert-opt` attraverso il plugin (ABI 2) | ✅ 19 contro 14,7 tok/s decode, traffico ÷3–4 |
 | 4c | Scambi adattivi sulla MI50 (ABI 3) | ✅ tetto 8 per giro: pari a nessuno scambio su richieste brevi |
-| 5 | Configurazione nell'app | ⏳ |
+| 5 | Configurazione nell'app | ✅ componente engine `0.1.51-mi50` fissato + `user_args`; 32,5 tok/s nell'app 0.2.6 |
 
 ## Rischi
 - Memoria host bloccata condivisa tra i due runtime (registrata da uno, letta dall'altro): da provare; ripiego con copie da memoria
