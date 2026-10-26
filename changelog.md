@@ -1,4 +1,25 @@
-# changelog.md — versione 0.2.2-mi50.17 (2026-10-26 23:45)
+# changelog.md — versione 0.2.2-mi50.18 (2026-10-27 00:07)
+
+## 0.2.2-mi50.18 — 2026-10-27 00:07
+- **Turni brevi lenti: causa e correzione.** Il motore legge i token nuovi di un turno in due modi: fino a `--short-read`
+  token (default 64) con le finestre della scrittura (cache esperti, MI50, ~14 ms per token); oltre, con la lettura a blocchi
+  dei prompt grandi, che presta e restituisce slot della cache e scarica dalla RAM / dal disco gli esperti di ogni strato: ~6 s
+  fissi più ~6 ms per token. I turni da 82–255 token della chat di prova finivano nella lettura a blocchi (3,5–5,5 s).
+  Misura con `scripts/mi50-bench/turns2.py` (stessa chat, `STRATA_TRACE=1`, config dell'app, contesto 64K):
+  | token nuovi | `--short-read 64` (a blocchi) | `--short-read 512` (finestre) |
+  |---|---|---|
+  | ~125 | 6,5 s | 2,0 s |
+  | ~410–460 | 9,0 s | 5,9 s |
+  | ~640–680 | 10,3 s | 8,9 s (a blocchi anche qui) |
+  Pareggio intorno ai 650 token. Messo `--short-read 512` in `"user_args"` della config dell'app (backup
+  `strata-iq3_s.json.bak-shortread-2026-10-27`; rollback: togliere le due voci). Non ancora provato dentro l'app.
+- Monitor (Record log, 4,5 min): durante la lettura a blocchi di un prompt la CPU è al 100%, il disco legge 2–3 GB/s, la
+  9070 lavora al 22–67% e la MI50 è ferma: la lettura dei prompt grandi è limitata da disco e CPU (gli esperti che non stanno
+  nella RAM, 27,8 GiB residenti, si rileggono dal file a ogni prompt). In scrittura: 9070 ~90%, MI50 ~21%, disco ~40 MB/s.
+  Dopo il caricamento la CPU resta ~60% per ~80 s a modello fermo (lavoro in background del motore).
+- Primo prompt dopo il caricamento lento nelle prove (96–169 tok/s su 9.563 token) rispetto ai 430–610 tok/s della chat
+  dell'app a regime: con il motore appena avviato la copia degli esperti in RAM non è ancora completa.
+- Script di misura promossi in `scripts/mi50-bench/` (README con l'uso).
 
 ## 0.2.2-mi50.17 — 2026-10-26 23:45
 - **Monitor dell'app** (`apps/host`, interfaccia installata nell'app 0.2.6 al posto di `host\dist`; originale in

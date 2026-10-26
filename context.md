@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.17 (2026-10-26 23:45)
+# context.md — versione 0.2.2-mi50.18 (2026-10-27 00:07)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -18,7 +18,8 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Monitor dell'app: valori per scheda, Record log, temperature AMD (D3DKMT) | ✅ installati nell'app; ⏳ da provare la registrazione in chat (changelog 0.2.2-mi50.17) |
 | PCIe MB/s e consumo in watt per le AMD su Windows | ⛔ nessuna fonte affidabile (D3DKMT, ADL, contatori) |
 | Effetto della dimensione del contesto sulla velocità (64K → 128K e oltre) | ⏳ punto aperto: la KV sta tutta sulla 9070, più contesto = meno esperti in VRAM |
-| Turni brevi lenti: 82–255 token nuovi letti in 3,5–5,5 s | ⏳ da analizzare (costo fisso della lettura del prompt) |
+| Turni brevi lenti: 82–255 token nuovi letti in 3,5–5,5 s | ✅ causa: soglia `--short-read` 64; con 512 ~125 token in 2,0 s invece di 6,5 (changelog 0.2.2-mi50.18); ⏳ da provare nell'app |
+| Lettura dei prompt grandi limitata da disco (2–3 GB/s) e CPU, MI50 ferma | ⏳ idee: leggere dalla VRAM della MI50 gli esperti che tiene (oggi il plugin non serve `copy_cached_blobs`), più RAM per gli esperti |
 | VRAM libera a 752–945 MiB all'inizio delle richieste | ⏳ valutare `--vram-reserve-mib` 1856 come consiglia il motore |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
@@ -54,7 +55,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
    `python -I packaging/make_component_mi50.py --pin` (con l'app senza modello caricato).
 3. Ridurre l'attesa per strato della MI50 (sovrapporre al lavoro di 9070 e CPU).
 4. ✅ (2026-10-26) `--remote-expert-opt` nel plugin (changelog 0.2.2-mi50.14). Da usare sempre con le due schede: config `strata-dualopt.json`.
-6. Punti aperti dall'analisi della chat di prova (changelog 0.2.2-mi50.17), in ordine: costo fisso dei turni brevi; riserva di VRAM;
+6. Punti aperti dall'analisi della chat di prova (changelog 0.2.2-mi50.17), in ordine: ✅ costo fisso dei turni brevi (`--short-read 512`); riserva di VRAM;
    contesto più grande contro velocità; far lavorare la MI50 anche nella lettura del prompt (oggi ferma, CPU al 100%).
 5. ✅ (2026-10-26) scambi adattivi sulla MI50 (changelog 0.2.2-mi50.15): tetto `STRATA_PLUGIN_ADAPT_SWAPS` 8, spegnibili con
    `STRATA_PLUGIN_ADAPT=0`. Da rimisurare su una conversazione lunga che cambia argomento.
@@ -66,6 +67,8 @@ PIANO_DUAL_GPU_2026-10-23.md.
   bloccanti e passano dallo slot x4; con 96 il decode scende del 12%, con 24 del 9%, con 8 è pari a nessuno scambio.
 - Engine nell'app come componente fissato, non come percorso nella config (2026-10-26): il setup dell'app riscrive `exe` e
   `lib_dirs` a ogni caricamento; il componente sopravvive e passa il controllo SHA-256 dell'app.
+- `--short-read 512`, non di più (2026-10-27): la lettura a finestre costa ~14 ms per token, quella a blocchi ~6 s + ~6 ms per
+  token; il pareggio è a ~650 token, 512 resta dal lato misurato più veloce.
 - DFlash2 non adottato (2026-10-26): sulla 9070 più lento di MTP su 2 prompt su 3, gira solo da riga di comando su una scheda
   (non con il server né con la MI50); upstream misura lo stesso sulla R9700 (changelog 0.2.2-mi50.13).
 - Codice: le modifiche per HIP 5.x / 6.4 sono limitate da `#if` alle build interessate; la forma precedente resta nel codice con data.
