@@ -86,7 +86,8 @@ export async function readGpuTelemetry(gpus) {
     if(gpu.vendor==='nvidia')reading={...reading,pcieRxMbs:transfer.get(gpu.sensorIndex??gpu.index)??null};
     if(gpu.luid&&!nvidia.has(gpu.id)) {
       const counters=windowsGpuReading(gpu.luid);
-      if(counters)reading={...reading,utilizationPct:counters.utilizationPct,memoryUsedGb:round(counters.memoryUsedGb,2)};
+      // strata-mi50 (2026-10-26): + the D3DKMT temperature (windows-gpu.mjs); was load and memory only
+      if(counters)reading={...reading,utilizationPct:counters.utilizationPct,memoryUsedGb:round(counters.memoryUsedGb,2),temperatureC:counters.temperatureC??reading.temperatureC};
     }
     if(gpu.sensorPath&&!nvidia.has(gpu.id)) {
       let temperature=null,power=null,powerLimit=null;

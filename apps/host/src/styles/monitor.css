@@ -89,3 +89,10 @@
   .monitor-spark .spark__readout { right: auto; left: 0; max-width: 230px; }
   .monitor-metric:nth-child(even) .monitor-spark .spark__readout { right: 0; left: auto; }
 }
+
+/* strata-mi50 (2026-10-26): the Monitor's Record log button - a hollow circle, a red one that pulses while a recording runs */
+.monitor-record { gap: 8px; }
+.monitor-record__dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; box-sizing: border-box; flex: none; }
+.monitor-record__dot[data-on="true"] { background: #e5484d; border-color: #e5484d; box-shadow: 0 0 0 0 rgba(229, 72, 77, .6); animation: monitor-record-pulse 1.4s ease-out infinite; }
+@keyframes monitor-record-pulse { 0% { box-shadow: 0 0 0 0 rgba(229, 72, 77, .6); } 100% { box-shadow: 0 0 0 8px rgba(229, 72, 77, 0); } }
+@media (prefers-reduced-motion: reduce) { .monitor-record__dot[data-on="true"] { animation: none; } }

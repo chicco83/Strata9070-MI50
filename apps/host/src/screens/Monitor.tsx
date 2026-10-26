@@ -13,7 +13,8 @@ import { Bar, Btn, Icon, IconBtn, Select, type IconName } from '../components/ui
 import { Screen } from '../components/layout';
 import { contextLabel, duration, tokens, tps } from '../lib/format';
 import { defaultGpuSet, gpuCapacity, gpuId, gpuMetric, gpuReported, hasReading, shortGpuName } from '../lib/monitor-hardware';
-import { useStore } from '../lib/store';
+import { pushToast, useStore } from '../lib/store';
+import { startRecording, stopRecording, useDiagnosticsRecording } from '../lib/diagnostics-recorder';
 import { useKept } from '../lib/kept-state';
 import type { Hardware, MonitorState, ServeRequest } from '../lib/types';
 import { useNative, nativeRouting, type NativeState } from '../lib/native';
@@ -28,7 +29,8 @@ function ReadingBar({ label, value, tone = 'accent' }: {
 }) {
     return hasReading(value) ? <Bar label={tr(label)} value={value} tone={tone}/> : <div className="st-progress" role="img" aria-label={tr("{0}: unavailable", [label])}/>;
 }
-function MonitorMetric({ label, icon, value, unit, sub, chart, source, secondary }: {
+type DeviceReading = { name: string; value: string; unit: string };
+function MonitorMetric({ label, icon, value, unit, sub, chart, source, secondary, perDevice }: {
     label: string;
     icon: IconName;
     value: ReactNode;
@@ -37,10 +39,13 @@ function MonitorMetric({ label, icon, value, unit, sub, chart, source, secondary
     chart: ReactNode;
     source: string;
     secondary?: ReactNode;
+    /** strata-mi50 (2026-10-26): several GPUs selected - one reading per card instead of the total / mean / max */
+    perDevice?: DeviceReading[];
 }) {
     return <section className="st-card monitor-metric" aria-label={tr(label)}>
     <div className="st-metric__label"><Icon name={icon} size={18}/>{tr(label)}<span className="monitor-metric__source xs">{tr(source)}</span></div>
-    <div className={secondary ? 'monitor-speed-values' : 'monitor-metric__reading'}><div><div className="st-metric__value">{tr(value)}{tr(unit ? <span className="st-metric__unit">{tr(unit)}</span> : null)}</div><div className="monitor-metric__sub xs muted">{tr(sub)}</div></div>{tr(secondary)}</div>
+    {perDevice ? <div className="monitor-speed-values monitor-per-device">{perDevice.map((d, i) => <div key={i}><div className="st-metric__value">{d.value}{d.unit ? <span className="st-metric__unit">{d.unit}</span> : null}</div><div className="monitor-metric__sub xs muted">{d.name}</div></div>)}</div>
+        : <div className={secondary ? 'monitor-speed-values' : 'monitor-metric__reading'}><div><div className="st-metric__value">{tr(value)}{tr(unit ? <span className="st-metric__unit">{tr(unit)}</span> : null)}</div><div className="monitor-metric__sub xs muted">{tr(sub)}</div></div>{tr(secondary)}</div>}
     {tr(chart)}
   </section>;
 }
@@ -84,6 +89,23 @@ function LegacyMonitorScreen({ native }: {
     const snapshotRef = useRef<HTMLDivElement>(null);
     const [saving, setSaving] = useState(false), [saveError, setSaveError] = useState('');
     const [snapshotOpen, setSnapshotOpen] = useState(false), [screenshot, setScreenshot] = useState('');
+    // strata-mi50 (2026-10-26): Record diagnostics (lib/diagnostics-recorder.ts)
+    // the recorder runs outside this screen, so a recording goes on while a chat is open
+    const recorder = useDiagnosticsRecording();
+    function toggleRecording() {
+        if (!recorder.recording) {
+            startRecording();
+            pushToast('success', tr('Recording the log'), tr('The Monitor readings are saved once a second, also while you use other screens, until you press Stop.'));
+            return;
+        }
+        try {
+            const name = stopRecording();
+            pushToast('success', tr('Diagnostics saved'), `${name} · ${tr('It is in your Downloads folder.')}`);
+        }
+        catch {
+            pushToast('error', tr('The diagnostics were not saved'), tr('Try again.'));
+        }
+    }
     async function saveScreenshot() {
         if (!live || !snapshotRef.current || saving)
             return;
@@ -141,6 +163,22 @@ function LegacyMonitorScreen({ native }: {
     const historyGpu = (key: Parameters<typeof gpuMetric>[2], fallback: 'gpuLoad' | 'vramUsedGb' | 'gpuTempC' | 'powerW' | 'pcieRxMbs', mode: Parameters<typeof gpuMetric>[3] = 'sum') => history.map(sample => sample.gpus ? gpuMetric(selectedGpus, sample.gpus, key, mode) : (sample.gpuIds ? selectedGpus.length === sample.gpuIds.length && selectedGpus.every(gpu => sample.gpuIds!.includes(gpuId(gpu))) : gpuChoice === 'all') ? sample[fallback] : null);
     const historyCpu = history.map(sample => cpuChoice === 'all' ? sample.cpuLoad : sample.cpus?.find(p => p.id === cpuChoice)?.utilizationPct);
     const chart = (label: string, values: (number | null | undefined)[], unit: string, maximum?: number, tone?: string) => <ReferenceSpark label={tr(label)} data={values} unit={unit} timestamps={timestamps} maximum={maximum} tone={tone}/>;
+    // strata-mi50 (2026-10-26): with several GPUs selected every GPU box shows each card's own reading (was one total / mean / max),
+    // and with two cards the chart draws one line per card
+    type GpuKey = Parameters<typeof gpuMetric>[2];
+    const perGpu = (key: GpuKey, digits: number, unit: (gpu: (typeof selectedGpus)[number]) => string): DeviceReading[] | undefined => multipleGpus ? selectedGpus.map(g => {
+        const v = readings?.find(r => r.id === gpuId(g))?.[key];
+        const known = typeof v === 'number' && Number.isFinite(v);
+        return { name: shortGpuName(g.name), value: number(known ? v : null, digits), unit: known ? unit(g) : '' };
+    }) : undefined;
+    const gpuChart = (label: string, key: GpuKey, fallback: Parameters<typeof historyGpu>[1], mode: Parameters<typeof gpuMetric>[3], unit: string, maximum?: number, tone?: string) => {
+        if (selectedGpus.length !== 2)
+            return chart(label, historyGpu(key, fallback, mode), unit, maximum, tone);
+        const series = selectedGpus.map(g => history.map(sample => sample.gpus ? gpuMetric([g], sample.gpus, key, 'sum') : null));
+        // one scale for both lines, so the two cards can be compared
+        const top = maximum ?? Math.max(1, ...series.flat().filter((v): v is number => typeof v === 'number' && Number.isFinite(v)));
+        return <ReferenceSpark label={tr(label)} data={series[0]} unit={unit} timestamps={timestamps} maximum={top} tone={tone} secondary={{ data: series[1], label: shortGpuName(selectedGpus[1].name), tone: 'var(--st-chart-prefill)', maximum: top }}/>;
+    };
     const gpuName = multipleGpus ? `${selectedGpus.length} GPUs · mean utilization` : selectedGpus[0]?.name ?? (selectedInstance && !selectedInstance.gpuIds.length ? native ? 'Automatic GPU placement' : 'CPU only · no GPU assigned' : 'No GPU detected');
     const cpuName = !selectedCpus.length ? 'Processor information unavailable' : selectedCpus.length > 1 ? `${selectedCpus.length} processors · ${selectedCpus.reduce((n, p) => n + p.cores, 0)} cores · ${selectedCpus.reduce((n, p) => n + p.threads, 0)} threads` : `${selectedCpus[0]?.model ?? 'CPU'} · ${hardware?.cpu.topologyKnown === false ? '' : `${selectedCpus[0]?.cores ?? 0} cores · `}${selectedCpus[0]?.threads ?? 0} threads`;
     const phase = writing ? 'generating' : data.queue.waiting > 0 && data.phase === 'idle' ? 'queued' : data.phase;
@@ -167,11 +205,11 @@ function LegacyMonitorScreen({ native }: {
     </section>
     <div className="monitor-metrics">
       {tr(!multipleScope ? <MonitorMetric label={tr("Speed")} icon="gauge" value={number(decode, 1)} unit={hasReading(decode) ? 't/s' : ''} source={throughput} sub={writing ? 'Decode now' : last ? 'Decode last request' : 'Decode'} secondary={<div><div className="st-metric__value">{tr(number(prefill))}{tr(hasReading(prefill) ? <span className="st-metric__unit">{tr("t/s")}</span> : null)}</div><div className="monitor-metric__sub xs muted">{tr(data.phase === 'reading' ? 'Prefill now' : writing ? 'Prefill this request' : last ? 'Prefill last request' : 'Prefill')}</div></div>} chart={<ReferenceSpark label={tr("Speed")} data={history.map(s => throughputKnown ? s.outputTps : null)} secondary={{ data: history.map(s => throughputKnown ? s.promptTps : null), label: 'Prefill', tone: 'var(--st-chart-prefill)' }} tone="var(--st-chart-decode)" unit="t/s" timestamps={timestamps}/>}/> : null)}
-      <MonitorMetric label={tr("GPU load")} icon="gpu" value={number(gpuLoad)} unit={hasReading(gpuLoad) ? '%' : ''} source={gpuSource('utilizationPct', 'mean')} sub={whose('utilizationPct', 'mean') ?? gpuName} chart={chart('GPU load', historyGpu('utilizationPct', 'gpuLoad', 'mean'), '%', 100)}/>
-      <MonitorMetric label={tr(shared ? 'Shared GPU memory' : 'VRAM')} icon="layers" value={number(vram, 1)} unit={hasReading(vram) ? vramTotal ? `/ ${number(vramTotal, 0)} GB` : 'GB' : ''} source={gpuSource('memoryUsedGb')} sub={whose('memoryUsedGb') ?? (shared ? 'Same memory pool as system RAM' : multipleGpus ? 'Total across selected GPUs' : cacheKnown && devices.length === 1 ? `${number(data.expertCache.used)} experts cached` : 'GPU memory')} chart={chart(shared ? 'Shared GPU memory' : 'VRAM', historyGpu('memoryUsedGb', 'vramUsedGb'), 'GB', vramTotal)}/>
-      <MonitorMetric label={tr("GPU temp")} icon="thermometer" value={number(temperature)} unit={hasReading(temperature) ? '°C' : ''} source={gpuSource('temperatureC', 'max')} sub={whose('temperatureC', 'max') ?? (multipleGpus ? 'Hottest selected GPU' : selectedGpus[0]?.name ?? (selectedInstance && !selectedInstance.gpuIds.length ? native ? 'Automatic GPU placement' : 'CPU only · no GPU assigned' : 'No GPU detected'))} chart={chart('GPU temperature', historyGpu('temperatureC', 'gpuTempC', 'max'), '°C', 90, 'var(--st-warn)')}/>
-      <MonitorMetric label={tr("Power")} icon="bolt" value={number(power)} unit={hasReading(power) ? 'W' : ''} source={gpuSource('powerW')} sub={whose('powerW') ?? (hasReading(powerLimit) ? `of ${number(powerLimit)} W limit` : multipleGpus ? 'Total across selected GPUs' : 'GPU power draw')} chart={chart('GPU power', historyGpu('powerW', 'powerW'), 'W', powerLimit ?? undefined)}/>
-      <MonitorMetric label={tr("PCIe")} icon="link" value={hasReading(gen) ? `Gen${gen}` : multipleGpus ? number(pcieRx, 1) : '—'} unit={hasReading(gen) && hasReading(width) ? `x${width}` : multipleGpus && hasReading(pcieRx) ? 'MB/s' : ''} source={hasReading(gen) ? sourceLabel(singleReading?.source) : gpuSource('pcieRxMbs')} sub={hasReading(pcieRx) ? `To GPU ${number(pcieRx, 1)} MB/s${whose('pcieRxMbs') ? ` · ${whose('pcieRxMbs')}` : ''}${hasReading(gen) && hasReading(singleReading?.pcieGen) && singleReading.pcieGen < gen ? ` · idle Gen${singleReading.pcieGen}` : ''}` : shared ? 'Shared memory · no PCIe link' : multipleGpus ? 'Total transfer to selected GPUs' : 'Transfer to GPU unavailable'} chart={chart('PCIe transfer', historyGpu('pcieRxMbs', 'pcieRxMbs'), 'MB/s', undefined, 'var(--st-info)')}/>
+      <MonitorMetric label={tr("GPU load")} icon="gpu" value={number(gpuLoad)} unit={hasReading(gpuLoad) ? '%' : ''} source={gpuSource('utilizationPct', 'mean')} sub={whose('utilizationPct', 'mean') ?? gpuName} perDevice={perGpu('utilizationPct', 0, () => '%')} chart={gpuChart('GPU load', 'utilizationPct', 'gpuLoad', 'mean', '%', 100)}/>
+      <MonitorMetric label={tr(shared ? 'Shared GPU memory' : 'VRAM')} icon="layers" value={number(vram, 1)} unit={hasReading(vram) ? vramTotal ? `/ ${number(vramTotal, 0)} GB` : 'GB' : ''} source={gpuSource('memoryUsedGb')} sub={whose('memoryUsedGb') ?? (shared ? 'Same memory pool as system RAM' : multipleGpus ? 'Total across selected GPUs' : cacheKnown && devices.length === 1 ? `${number(data.expertCache.used)} experts cached` : 'GPU memory')} perDevice={perGpu('memoryUsedGb', 1, g => `/ ${number(g.vramGb, 0)} GB`)} chart={gpuChart(shared ? 'Shared GPU memory' : 'VRAM', 'memoryUsedGb', 'vramUsedGb', 'sum', 'GB', selectedGpus.length === 2 ? Math.max(...selectedGpus.map(g => g.vramGb)) : vramTotal)}/>
+      <MonitorMetric label={tr("GPU temp")} icon="thermometer" value={number(temperature)} unit={hasReading(temperature) ? '°C' : ''} source={gpuSource('temperatureC', 'max')} sub={whose('temperatureC', 'max') ?? (multipleGpus ? 'Hottest selected GPU' : selectedGpus[0]?.name ?? (selectedInstance && !selectedInstance.gpuIds.length ? native ? 'Automatic GPU placement' : 'CPU only · no GPU assigned' : 'No GPU detected'))} perDevice={perGpu('temperatureC', 0, () => '°C')} chart={gpuChart('GPU temperature', 'temperatureC', 'gpuTempC', 'max', '°C', 90, 'var(--st-warn)')}/>
+      <MonitorMetric label={tr("Power")} icon="bolt" value={number(power)} unit={hasReading(power) ? 'W' : ''} source={gpuSource('powerW')} sub={whose('powerW') ?? (hasReading(powerLimit) ? `of ${number(powerLimit)} W limit` : multipleGpus ? 'Total across selected GPUs' : 'GPU power draw')} perDevice={perGpu('powerW', 0, () => 'W')} chart={gpuChart('GPU power', 'powerW', 'powerW', 'sum', 'W', selectedGpus.length === 2 ? undefined : powerLimit ?? undefined)}/>
+      <MonitorMetric label={tr("PCIe")} icon="link" value={hasReading(gen) ? `Gen${gen}` : multipleGpus ? number(pcieRx, 1) : '—'} unit={hasReading(gen) && hasReading(width) ? `x${width}` : multipleGpus && hasReading(pcieRx) ? 'MB/s' : ''} source={hasReading(gen) ? sourceLabel(singleReading?.source) : gpuSource('pcieRxMbs')} sub={hasReading(pcieRx) ? `To GPU ${number(pcieRx, 1)} MB/s${whose('pcieRxMbs') ? ` · ${whose('pcieRxMbs')}` : ''}${hasReading(gen) && hasReading(singleReading?.pcieGen) && singleReading.pcieGen < gen ? ` · idle Gen${singleReading.pcieGen}` : ''}` : shared ? 'Shared memory · no PCIe link' : multipleGpus ? 'Total transfer to selected GPUs' : 'Transfer to GPU unavailable'} perDevice={perGpu('pcieRxMbs', 1, () => 'MB/s')} chart={gpuChart('PCIe transfer', 'pcieRxMbs', 'pcieRxMbs', 'sum', 'MB/s', undefined, 'var(--st-info)')}/>
       <MonitorMetric label={tr("CPU")} icon="cpu" value={number(cpu)} unit={hasReading(cpu) ? '%' : ''} source={hasReading(cpu) ? 'Measured' : 'Unavailable'} sub={cpuName} chart={chart('CPU utilization', historyCpu, '%', 100)}/>
       <MonitorMetric label={tr("Disk read")} icon="disk" value={number(hasReading(data.hardware.diskReadGbs) ? data.hardware.diskReadGbs >= 1 ? data.hardware.diskReadGbs : data.hardware.diskReadGbs * 1024 : null, 1)} unit={hasReading(data.hardware.diskReadGbs) ? data.hardware.diskReadGbs >= 1 ? 'GB/s' : 'MB/s' : ''} source={hasReading(data.hardware.diskReadGbs) ? 'Measured' : 'Unavailable'} sub={hasReading(data.hardware.diskWriteMbs) ? `Write ${number(data.hardware.diskWriteMbs, 1)} MB/s` : 'Read throughput'} chart={chart('Disk read', history.map(s => hasReading(s.diskReadGbs) ? s.diskReadGbs * 1024 : null), 'MB/s', undefined, 'var(--st-info)')}/>
     </div>
@@ -193,5 +231,5 @@ function LegacyMonitorScreen({ native }: {
     </section>
     {tr(data.mcp?.servers.length ? <section className="st-card monitor-mcp"><div className="section-toolbar"><h2 className="h4">{tr("MCP servers")}</h2><span className="small muted">{tr("{0} tools · {1} of {2} servers connected", [number(data.mcp.tools),number(data.mcp.servers.filter(server => ['ready','stopped'].includes(server.state)).length),number(data.mcp.servers.length)])}</span></div>{tr(data.mcp.servers.map(server => <div key={server.name}><div className="row row--between"><strong>{server.name}</strong><span className="small muted">{tr({ ready: 'Connected', starting: 'Starting', failed: 'Failed', stopped: 'Stopped', idle: 'Waiting' }[server.state] ?? server.state)}</span></div><p className="xs muted">{server.transport}{tr(server.transport ? ' · ' : '')}{tr(server.tools.length)}{tr(" tools")}{tr(server.info?.name ? ` · ${server.info.name}${server.info.version ? ` ${server.info.version}` : ''}` : '')}</p>{tr(server.error ? <p className="small inline-error">{tr(server.error)}</p> : null)}<div className="monitor-mcp-tools">{tr(server.tools.map(tool => <span key={tool.name} title={tr(tool.description)} className="st-badge">{tool.name}</span>))}</div></div>))}</section> : null)}
   </div>;
-    return <Screen width="wide" plainHeader title={tr("Monitor")} titleDetail={multipleModels ? <Select ariaLabel={tr("Monitor model")} value={selection} options={[{ value: 'all', label: `All models (${runtime?.instances.length ?? 0})` }, ...(runtime?.instances ?? []).map(i => ({ value: i.id, label: `${instanceLabel(i)} · ${deviceLabel(i.gpuIds, inventory)}` }))]} onChange={chooseInstance}/> : selectedInstance ? instanceLabel(selectedInstance) : 'No model loaded'} actions={<IconBtn name="image" title={tr(saving ? 'Preparing screenshot…' : 'Save Monitor screenshot')} disabled={saving} onClick={() => void saveScreenshot()}/>}>{tr(saveError ? <p className="inline-error" role="alert">{tr(saveError)}</p> : null)}{tr(overview)}<SnapshotDialog open={snapshotOpen} data={screenshot} pending={saving} error={saveError} onClose={() => setSnapshotOpen(false)} onRetry={() => void saveScreenshot()}/></Screen>;
+    return <Screen width="wide" plainHeader title={tr("Monitor")} titleDetail={multipleModels ? <Select ariaLabel={tr("Monitor model")} value={selection} options={[{ value: 'all', label: `All models (${runtime?.instances.length ?? 0})` }, ...(runtime?.instances ?? []).map(i => ({ value: i.id, label: `${instanceLabel(i)} · ${deviceLabel(i.gpuIds, inventory)}` }))]} onChange={chooseInstance}/> : selectedInstance ? instanceLabel(selectedInstance) : 'No model loaded'} actions={<><Btn size="sm" variant={recorder.recording ? 'primary' : 'secondary'} className="monitor-record" title={tr(recorder.recording ? 'Stop and save the log' : 'Record a log of every reading, once a second')} onClick={toggleRecording}><span className="monitor-record__dot" data-on={recorder.recording}/>{tr(recorder.recording ? `Stop log · ${recorder.count} s` : 'Record log')}</Btn><IconBtn name="image" title={tr(saving ? 'Preparing screenshot…' : 'Save Monitor screenshot')} disabled={saving} onClick={() => void saveScreenshot()}/></>}>{tr(saveError ? <p className="inline-error" role="alert">{tr(saveError)}</p> : null)}{tr(overview)}<SnapshotDialog open={snapshotOpen} data={screenshot} pending={saving} error={saveError} onClose={() => setSnapshotOpen(false)} onRetry={() => void saveScreenshot()}/></Screen>;
 }

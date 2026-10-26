@@ -1,4 +1,31 @@
-# changelog.md — versione 0.2.2-mi50.16 (2026-10-26 23:21)
+# changelog.md — versione 0.2.2-mi50.17 (2026-10-26 23:45)
+
+## 0.2.2-mi50.17 — 2026-10-26 23:45
+- **Monitor dell'app** (`apps/host`, interfaccia installata nell'app 0.2.6 al posto di `host\dist`; originale in
+  `host\dist.official-0.2.6`):
+  - con «All GPUs» ogni riquadro GPU (carico, VRAM, temperatura, consumo, PCIe) mostra il valore di ogni scheda invece del
+    totale / media / massimo; con due schede il grafico ha una linea per scheda sulla stessa scala (`Monitor.tsx`, `charts.tsx`);
+  - pulsante **Record log** (testo, cerchio rosso che pulsa durante la registrazione, `monitor.css`): ogni secondo fase,
+    velocità, CPU, RAM, lettura/scrittura disco e per ogni GPU carico / VRAM / PCIe / consumo / temperatura; **Stop log** salva
+    `Strata-Diagnostics-<ora>.json` in Download. Il registratore vive fuori dalla schermata (`lib/diagnostics-recorder.ts`),
+    quindi continua in chat (prima versione: si fermava uscendo dal Monitor). I dati del Monitor cambiano ogni ~2 s.
+- **Temperatura delle GPU AMD su Windows** (`server/windows-gpu.mjs`, `server/device-probes.mjs`, installati in `host\server`;
+  originali `*.official-0.2.6`): da `D3DKMT_ADAPTER_PERFDATA`, la fonte del Task Manager, nello stesso ciclo PowerShell di carico
+  e VRAM. Provato con Node: 9070 47 °C, Pro VII 42 °C. Fonte presa dalla sessione «Supporto MI50 in LHM» (tab2revamp,
+  2026-10-22, PR LibreHardwareMonitor#2597): con il BIOS della MI50 ogni chiamata ADL rifiuta la scheda (verificato di nuovo:
+  `ADL_ERR_NOT_SUPPORTED`). Non disponibili per le AMD su Windows: traffico PCIe in MB/s (D3DKMT 0 o valore senza senso, nessun
+  contatore), consumo in watt (la 9070 solo via ADL PMLog con sensore incerto; la Pro VII solo % del limite). Il collegamento PCIe
+  che Windows riporta per la Pro VII (Gen4 x16) contraddice lo slot x4 misurato: non mostrato.
+- **Analisi della chat di prova nell'app** (23 richieste, log `strata-iq3_s.log` dalle 23:16; i due file Record log salvati
+  erano della prima versione, 5 e 11 s, senza dati utili):
+  - decode 38,5 tok/s a 13K token di contesto, 31–32 a 20K, 24–28 a 35–40K;
+  - attesa della MI50 ~20–25% del tempo di decode in ogni richiesta (es. 17,8 s su 80,6 s), preparazione lato host ~2%;
+  - lettura del prompt: 430–610 tok/s sui prompt grandi (MI50 ferma, CPU al 100%); **turni brevi lenti**: 82–255 token nuovi
+    letti in 3,5–5,5 s (costo fisso da capire);
+  - conversation cache efficace (fino a 39.725 token riusati su 39.817); a ~40K la chat ha riassunto e due richieste hanno
+    riletto 13.546 e 16.437 token (27 s ciascuna);
+  - due avvisi del motore: solo 752–945 MiB di VRAM liberi all'inizio di una richiesta (rischio di paging WDDM), consiglia
+    `--vram-reserve-mib` 1664–1856.
 
 ## 0.2.2-mi50.16 — 2026-10-26 23:21
 - **Le due schede nell'app Strata** (app 0.2.6, Control 0.1.51, aggiornata dall'utente). Verificato nell'app: modello caricato con

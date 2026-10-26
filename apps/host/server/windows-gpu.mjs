@@ -55,20 +55,43 @@ export function windowsOtherGpus(videoRows, dx) {
   return out;
 }
 
-/** One counter line: "G <luid> <load percent> <dedicated bytes in use>". */
+/** One counter line: "G <luid> <load percent> <dedicated bytes in use> [<temperature in tenths of a degree C>]".
+ *  strata-mi50 (2026-10-26): the temperature is D3DKMT_ADAPTER_PERFDATA's, the source Task Manager uses (0 = not reported); it is
+ *  the one sensor every AMD card here gives on Windows, the Radeon Pro VII / MI50 included, whose ADL calls all fail.
+ *  Was: "G <luid> <load percent> <dedicated bytes in use>" only. */
 export function parseGpuCounterLine(line) {
-  const m = /^G\s+(luid_0x[0-9a-f]+_0x[0-9a-f]+)\s+(\d+(?:\.\d+)?)\s+(\d+)\s*$/i.exec(String(line));
-  return m ? { luid: m[1].toLowerCase(), utilizationPct: Math.max(0, Math.min(100, Number(m[2]))), memoryUsedGb: Number(m[3]) / 1024 ** 3 } : null;
+  const m = /^G\s+(luid_0x[0-9a-f]+_0x[0-9a-f]+)\s+(\d+(?:\.\d+)?)\s+(\d+)(?:\s+(\d+))?\s*$/i.exec(String(line));
+  const tenths = m?.[4] !== undefined ? Number(m[4]) : 0;
+  return m ? { luid: m[1].toLowerCase(), utilizationPct: Math.max(0, Math.min(100, Number(m[2]))), memoryUsedGb: Number(m[3]) / 1024 ** 3,
+    temperatureC: tenths > 0 && tenths <= 1500 ? tenths / 10 : null } : null;
 }
+
+// strata-mi50 (2026-10-26): D3DKMT_ADAPTER_PERFDATA (KMTQAITYPE_ADAPTERPERFDATA = 62, Windows 10 1809+) for a LUID, one adapter handle kept per
+// LUID.  Same layout as the Tab2Monitor agent's reader (tab2revamp) and LibreHardwareMonitor PR #2597.
+const KMT_TYPE = "Add-Type -TypeDefinition 'using System;using System.Collections.Generic;using System.Runtime.InteropServices;" +
+  "public static class StrataKmt{[StructLayout(LayoutKind.Sequential)]struct OpenLuid{public uint Low;public int High;public uint H;}" +
+  "[StructLayout(LayoutKind.Sequential)]struct Qai{public uint H;public int Type;public IntPtr P;public uint Size;}" +
+  "[StructLayout(LayoutKind.Sequential)]struct Perf{public uint Index;public ulong MemFreq;public ulong MaxMemFreq;public ulong MaxMemFreqOc;" +
+  "public ulong MemBw;public ulong PcieBw;public uint Fan;public uint Power;public uint Temp;public byte Override;}" +
+  "[DllImport(\"gdi32.dll\")]static extern int D3DKMTOpenAdapterFromLuid(ref OpenLuid o);" +
+  "[DllImport(\"gdi32.dll\")]static extern int D3DKMTQueryAdapterInfo(ref Qai q);" +
+  "static Dictionary<ulong,uint> handles=new Dictionary<ulong,uint>();" +
+  "public static uint Temp(uint high,uint low){ulong k=((ulong)high<<32)|low;uint h;" +
+  "if(!handles.TryGetValue(k,out h)){var o=new OpenLuid{Low=low,High=(int)high};if(D3DKMTOpenAdapterFromLuid(ref o)!=0)return 0;h=o.H;handles[k]=h;}" +
+  "var p=new Perf();int n=Marshal.SizeOf(typeof(Perf));IntPtr b=Marshal.AllocHGlobal(n);" +
+  "try{Marshal.StructureToPtr(p,b,false);var q=new Qai{H=h,Type=62,P=b,Size=(uint)n};if(D3DKMTQueryAdapterInfo(ref q)!=0)return 0;" +
+  "p=(Perf)Marshal.PtrToStructure(b,typeof(Perf));return p.Temp;}finally{Marshal.FreeHGlobal(b);}}}' -ErrorAction SilentlyContinue;";
 
 export function createWindowsGpuReader({ spawnFn, intervalSec = 4, maxStarts = 3, now = Date.now } = {}) {
   const readings = new Map();
   const script = utf8Script(
+    KMT_TYPE +
     `while($true){` +
     `$e=@(Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine);$m=@(Get-CimInstance Win32_PerfFormattedData_GPUPerformanceCounters_GPUAdapterMemory);` +
     `$u=@{};foreach($r in $e){if($r.Name -match '(luid_0x[0-9A-Fa-f]+_0x[0-9A-Fa-f]+)_phys_\\d+_eng_\\d+_engtype_(\\w+)'){$k=$matches[1].ToLower()+'|'+$matches[2];$u[$k]=[double]$u[$k]+[double]$r.UtilizationPercentage}};` +
     `$b=@{};foreach($k in $u.Keys){$l=$k.Split('|')[0];if(-not $b.ContainsKey($l) -or $u[$k] -gt $b[$l]){$b[$l]=$u[$k]}};` +
-    `foreach($r in $m){if($r.Name -match '(luid_0x[0-9A-Fa-f]+_0x[0-9A-Fa-f]+)'){$l=$matches[1].ToLower();[Console]::Out.WriteLine('G '+$l+' '+[math]::Round([double]$b[$l],0)+' '+$r.DedicatedUsage)}};` +
+    // 2026-10-26: a fifth field, the D3DKMT temperature in tenths of a degree (was four fields)
+    `foreach($r in $m){if($r.Name -match '(luid_0x([0-9A-Fa-f]+)_0x([0-9A-Fa-f]+))'){$l=$matches[1].ToLower();$t=0;try{$t=[StrataKmt]::Temp([Convert]::ToUInt32($matches[2],16),[Convert]::ToUInt32($matches[3],16))}catch{};[Console]::Out.WriteLine('G '+$l+' '+[math]::Round([double]$b[$l],0)+' '+$r.DedicatedUsage+' '+$t)}};` +
     `[Console]::Out.Flush();Start-Sleep -Seconds ${intervalSec}}`);
   const loop = createPowerShellLoop({ script, spawnFn, maxStarts, onLine: line => {
     const parsed = parseGpuCounterLine(line);
