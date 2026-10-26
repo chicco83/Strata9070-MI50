@@ -1,4 +1,4 @@
-// strata-mi50 (2026-10-27): the Record log button, one for the whole app, always in the same place (top centre) on every screen and
+// strata-mi50 (2026-10-27): the Record log button, one for the whole app, always in the same place (top right, 2026-10-27 (2); top centre before) on every screen and
 // chat, so a recording in progress is always visible (it was in the Monitor's header, 2026-10-26).  The recorder is
 // lib/diagnostics-recorder.ts.
 import { tr } from '../lib/i18n';

@@ -92,7 +92,9 @@
 
 /* strata-mi50: the Record log button - 2026-10-26 in the Monitor's header (.monitor-record), 2026-10-27 one for the whole app,
    fixed at the top centre of the window on every screen: a hollow circle, a red one that pulses while a recording runs */
-.record-log { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 60; display: inline-flex; align-items: center; gap: 8px;
+/* 2026-10-27 (2): back at the top right, where it sat in the Monitor's header beside the screenshot icon, still on every screen
+   (was top: 8px; left: 50%; transform: translateX(-50%), the top centre) */
+.record-log { position: fixed; top: calc((var(--st-header-h, 64px) - 28px) / 2); right: 76px; z-index: 60; display: inline-flex; align-items: center; gap: 8px;
   padding: 4px 12px; border-radius: 999px; border: 1px solid var(--st-line, rgba(127,127,127,.35)); background: var(--st-surface, #1b1d22);
   color: var(--st-ink, inherit); font: inherit; font-size: 12px; line-height: 18px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 .record-log:hover { border-color: currentColor; }

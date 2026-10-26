@@ -1,6 +1,7 @@
 # changelog.md — versione 0.2.2-mi50.20 (2026-10-27 00:22)
 
 ## 0.2.2-mi50.20 — 2026-10-27 00:22
+- Pulsante **Record log** riportato in alto a destra, dove stava nell'intestazione del Monitor accanto all'icona dello screenshot (richiesta dell'utente); resta unico e visibile su ogni schermata (`.record-log`: `right: 76px`, centrato nell'altezza dell'intestazione; prima in alto al centro).
 - Analisi del secondo Record log (7 min, 4 richieste nell'app con `--short-read 512` attivo, contesto 11–14K):
   - scrittura 29,5–38,1 tok/s; 9070 all'85–91%, MI50 solo all'11–12% (attesa della MI50 16–18% del tempo di scrittura: il collo è la latenza per strato sullo slot x4, non il calcolo della MI50); CPU ~53%;
   - anche in scrittura il disco legge 125–310 MB/s: i 27,7 GiB di esperti in RAM non bastano (15.003 e 25.783 letture dal file nelle due richieste lunghe); cache esperti della 9070 all'81%, il 63% degli esperti instradati passa da PCIe o dalla MI50;
