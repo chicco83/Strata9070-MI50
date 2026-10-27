@@ -31,6 +31,18 @@ test('a PC without room reads the rest from the SSD, and the amount is real', ()
   assert.ok(fitOn(gyroS, { ram_gb: 16, vram_gb: 8 }).spillGb > 10, 'a small PC spills a lot');
 });
 
+test('this fork: the MI50 (expert helper through the plugin) holds experts, so less is read from the SSD', () => {
+  // the owner's PC: 62 GB of RAM, the 9070 XT 15.9 GB, the Pro VII 15.4 GB for experts; UD-Q4_K_XL has 77 GB of experts
+  const pc = { ram_gb: 61.7, vram_gb: 15.9 };
+  assert.ok(fitOn(q4, pc).spillGb >= 14, 'without the helper about 15 GB come from the SSD ("Uses SSD 15 GB")');
+  const both = fitOn(q4, { ...pc, helper_gb: 15.4 });
+  assert.equal(both.spillGb, 0);
+  assert.equal(both.vramUseGb, 31.3, 'the main card full plus what the helper holds');
+  assert.equal(fitOn(swift, { ...pc, helper_gb: 15.4 }).spillGb, 0);
+  assert.equal(fitOn(q4, { ...pc, helper_gb: 0 }).spillGb, fitOn(q4, pc).spillGb, 'no helper: as before');
+  assert.equal(fitOn(q4, { ram_gb: 64, vram_gb: 0, helper_gb: 15.4 }).spillGb, fitOn(q4, { ram_gb: 64, vram_gb: 0 }).spillGb, 'no main card: the plugin does not run');
+});
+
 test('unknown hardware gives no verdict instead of a made-up one', () => {
   const f = fitOn(swift, null);
   assert.equal(f.known, false); assert.equal(f.spillGb, 0); assert.equal(f.memoryGb, 36.5);

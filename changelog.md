@@ -1,4 +1,22 @@
-# changelog.md — versione 0.2.2-mi50.21 (2026-10-27 00:56)
+# changelog.md — versione 0.2.2-mi50.22 (2026-10-27 01:40)
+
+## 0.2.2-mi50.22 — 2026-10-27 01:40
+- **Il consiglio dei modelli conta la MI50.** Prima l'app vedeva solo la 9070 (62 GB di RAM + 16 GB = 78 GB): l'elenco delle schede
+  viene dal motore HIP 6.4, che la Pro VII non la vede. Ora `strata_control/expert_helper.py` la trova tra le schede video di
+  Windows (PCI 66A0/66A1/66A2/66A3/66A7/66AF o nome Pro VII / Radeon VII / MI50 / MI60), **solo se nel motore installato c'è
+  `strata_helper_gfx906.dll`**, e la mette in `hardware.expert_helpers` / `expert_helper_gb` (15,4 GB: 16 GB meno 0,6 GB del plugin,
+  dalla misura di 0.2.2-mi50.9). Non entra in `hardware.gpus`: niente numero GPU, ruoli o strati per lei.
+- Chi la conta: il consiglio (`strata_mcp.recommend`: fascia, testo "… + 15 GB on the AMD Radeon Pro VII (expert helper) = 93 GB",
+  nota sulle letture dal disco), la tabella dei modelli (Gyro e modalità low-RAM) e nell'app `fitOn` (`helper_gb`), cioè
+  "Uses SSD", la scheda "This computer" e l'avviso dei ruoli. Il contesto preselezionato e il lettore di immagini restano
+  quelli della sola 9070 (la cache e il lettore stanno lì).
+- Effetto su questo PC (verificato con il rilevamento reale): la scelta resta **IQ3_S** (fascia 64 GB, la più alta); UD-Q4_K_XL
+  passa da "Uses SSD 15 GB" a tutta in memoria. Non aggiunta una fascia sopra i 64 GB: scelta da fare con le misure di velocità.
+- Test: `tools/test_expert_helper.py` (7, nuovi) e `apps/host/tests/native-fit.test.mjs` (+1) verdi, `tsc` pulito. Già rossi prima
+  di questa modifica e non toccati: `MixedGraphics.test_an_integrated_amd_gpu_beside_an_nvidia_card_is_not_offered` (su questo PC il
+  motore installato è AMD) e 5 test della suite dell'app (link simbolici, catalogo traduzioni, componente Control, Stop).
+- ⏳ **Non ancora installato nell'app**: servono un componente Control con `tools/strata_mcp.py` e `strata_control/expert_helper.py`
+  nuovi e l'interfaccia ricompilata. Rollback: `git revert <questo commit>`.
 
 ## 0.2.2-mi50.21 — 2026-10-27 00:56
 Tutte le misure con il profilo dell'app «Leave 20% for my work» («Full performance» non ancora misurato).

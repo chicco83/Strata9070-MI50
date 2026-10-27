@@ -7,7 +7,9 @@
  * (setup.py: low_ram_gpu_gb, LOW_RAM_HEADROOM_GB), so the page and the engine agree.
  */
 export interface FitInput { ram_needed_gb?: number; experts_gb?: number | null; memory_gb?: number; mem_total?: boolean }
-export interface FitHardware { ram_gb?: number | null; vram_gb?: number | null }
+/** helper_gb (this fork): experts an expert-helper card holds besides the main card (the MI50 through its plugin, hardware.expert_helper_gb).
+ *  The dense part, the cache and the draft layer stay on the main card, so it adds its whole figure. */
+export interface FitHardware { ram_gb?: number | null; vram_gb?: number | null; helper_gb?: number | null }
 export interface Fit {
   /** RAM + VRAM the version needs (the n-gram table not counted). */
   memoryGb: number;
@@ -46,11 +48,13 @@ export function fitOn(v: FitInput, hw: FitHardware | null | undefined, mtp = tru
   const ram = Number(hw?.ram_gb), vram = Number(hw?.vram_gb) || 0;
   if (!Number.isFinite(ram) || ram <= 0) return { memoryGb, vramUseGb: 0, ramUseGb: 0, spillGb: 0, known: false };
   const experts = Math.max(0, memoryNeeded(v) - DENSE_EXTRA_GB);
-  const onGpu = Math.max(0, Math.min(experts, vram - denseGb - (mtp && vram > 0 ? MTP_VRAM_GB : 0)));
+  const onMain = Math.max(0, Math.min(experts, vram - denseGb - (mtp && vram > 0 ? MTP_VRAM_GB : 0)));
+  const onHelper = vram > 0 ? Math.max(0, Math.min(experts - onMain, Number(hw?.helper_gb) || 0)) : 0;
+  const onGpu = onMain + onHelper;
   const ramRoom = Math.max(0, ram - SYSTEM_ROOM_GB);
   const spillGb = Math.max(0, experts - onGpu - ramRoom);
   const inRam = Math.max(0, experts - onGpu - spillGb);
-  const vramUseGb = vram > 0 ? Math.min(vram, denseGb + (mtp ? MTP_VRAM_GB : 0) + onGpu) : 0;
+  const vramUseGb = vram > 0 ? Math.min(vram, denseGb + (mtp ? MTP_VRAM_GB : 0) + onMain) + onHelper : 0;
   return { memoryGb, vramUseGb: round1(vramUseGb), ramUseGb: round1(inRam + DENSE_EXTRA_GB * (vram > 0 ? 0 : 1)), spillGb: round1(spillGb), known: true };
 }
 

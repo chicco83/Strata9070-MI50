@@ -984,6 +984,7 @@ class Strata:
             pass
         self._engine_code(hw)
         self._engine_vendor(hw)
+        self._expert_helpers(hw, S)
         if WIN:
             hw["display_adapters"] = windows_video_controllers()
         hw["nvidia_smi"] = bool(shutil.which("nvidia-smi"))
@@ -1031,6 +1032,23 @@ class Strata:
                 hw["gpu_note"] = note
         except Exception:                               # noqa: BLE001 - never break the hardware page over this
             pass
+
+    @staticmethod
+    def _expert_helpers(hw: dict, S) -> None:
+        """This fork (2026-10-27): a Radeon Pro VII / MI50 the HIP 6.x engine cannot see but holds experts through its plugin
+        (strata_control/expert_helper.py) is listed in hw["expert_helpers"], so the memory figures count it.  Never in hw["gpus"]."""
+        if not WIN or not S or hw.get("engine_vendor") not in (None, "amd"):
+            return
+        try:
+            from strata_control import expert_helper as eh
+            from strata_control import engine_component as ec
+            root = ec.resolve(backend="hip", full=False).root
+            found = eh.helper_cards(S.amd_gpus_windows(), root, hw.get("gpus", []))
+        except Exception:                               # noqa: BLE001 - no engine, no plugin: no helper
+            return
+        if found:
+            hw["expert_helpers"] = found
+            hw["expert_helper_gb"] = eh.helper_gb(hw)
 
     @staticmethod
     def engine_gpus(hw: dict | None) -> list:
@@ -1153,6 +1171,10 @@ class Strata:
         best = max(usable, key=lambda g: (round(g["vram_gb"]), -g.get("index", 0)))
         vram = best["vram_gb"]
         backend = "hip" if best.get("vendor") == "amd" else "cuda"
+        # This fork: the experts an expert-helper card holds (the MI50 through its plugin) count with the main card's VRAM; the
+        # context stays the main card's (the cache lives there).
+        helper = float(hw.get("expert_helper_gb") or 0.0)
+        card_vram, vram = vram, vram + helper
 
         def low_fits(m):
             try:
@@ -1162,11 +1184,13 @@ class Strata:
         notes = []
         # 0.2.0, the owner's memory tiers (README "The other sizes"; setup.py MEMORY_TIERS holds the same floors): RAM + VRAM
         # together.  An APU's shared memory is the RAM itself, so only its BIOS carve-out counts as VRAM.
-        tvram = float(best.get("dedicated_gb", 0.0)) if best.get("uma") else float(vram)
+        tvram = float(best.get("dedicated_gb", 0.0)) + helper if best.get("uma") else float(vram)
         tier = next(((f, n) for lo, f, n in MEMORY_TIERS if ram + tvram - TIER_SYSTEM_RESERVE_GB >= lo), None)
         if tier and tier[1] in models and tier[0] in families:
             fam, model = tier
-            total = f"{ram:.0f} GB of RAM + {tvram:.0f} GB of VRAM = {ram + tvram:.0f} GB, {TIER_SYSTEM_RESERVE_GB:.0f} GB of it kept for Windows and the system"
+            vram_words = (f"{tvram - helper:.0f} GB of VRAM + {helper:.0f} GB on the "
+                          + " + ".join(h["name"] for h in hw.get("expert_helpers") or []) + " (expert helper)") if helper else f"{tvram:.0f} GB of VRAM"
+            total = f"{ram:.0f} GB of RAM + {vram_words} = {ram + tvram:.0f} GB, {TIER_SYSTEM_RESERVE_GB:.0f} GB of it kept for Windows and the system"
             if model == "IQ2_XS":
                 why = (f"{total}, the 40 GB tier: Swift 1.5's IQ2_XS (thinks for a shorter time)"
                        + ("; Gyro-M (35 GB) is the other choice there, close to IQ3_XXS in quality but 16-21% slower at "
@@ -1198,7 +1222,7 @@ class Strata:
             return {"family": None, "model": None, "why": f"{ram:.0f} GB of RAM: Strata needs 32 GB or more "
                                                           "(the smallest model, the Coder, keeps ~23 GB of experts in "
                                                           "RAM)"}
-        ctx = 32768 if vram < 14 else 65536 if vram < 20 else 131072
+        ctx = 32768 if card_vram < 14 else 65536 if card_vram < 20 else 131072
         # #3425: the tiers count RAM + VRAM together, but the desktop keeps about 10 GB of the RAM and the card keeps ~6 GB for
         # its dense weights, so a PC at the floor of its tier reads part of the experts from the SSD at every answer.  Said
         # plainly beside the pick (the same arithmetic as the app's "This computer" card); the pick itself stays the owner's tier.
@@ -1208,7 +1232,7 @@ class Strata:
             notes.append(f"about {spill:.0f} GB of {model} would be read from the SSD while answering (this PC's RAM leaves about 10 GB "
                          "for the system and the card holds the rest): expect a few tokens per second on a SATA or USB drive, more "
                          "on a fast NVMe. A smaller size fits better; it is a recommendation, every size stays a choice")
-        if vram < 11:
+        if card_vram < 11:
             notes.append("less than 12 GB of VRAM: it runs, but slowly (most experts stay on the CPU)")
         if hw.get("cpu", {}).get("avx2") is False:      # #623: a warning, not a stop (setup compiles for it)
             notes.append("this CPU has no AVX2: EXPERIMENTAL and slow - setup compiles the engine on this PC for the "
@@ -1229,6 +1253,7 @@ class Strata:
         ram = (hw or {}).get("ram_gb")
         usable = self.engine_gpus(hw)
         vram = max((g["vram_gb"] for g in usable), default=0.0)
+        xvram = vram + float((hw or {}).get("expert_helper_gb") or 0.0)   # this fork: + the experts the MI50 holds (not for the picture reader)
         have = {c.stem[len("strata-"):] for c in self.configs()}
         out = []
         for f, fd in families.items():
@@ -1239,7 +1264,7 @@ class Strata:
                 tag = (fd.get("tag", "") + m).lower()
                 verdict = None
                 if ram is not None:
-                    have_gb = ram + vram if d.get("mem_total") else ram     # Gyro: VRAM and RAM together
+                    have_gb = ram + xvram if d.get("mem_total") else ram    # Gyro: VRAM and RAM together
                     verdict = "fits" if have_gb >= d["ram_gb"] else "tight" if have_gb >= d["ram_gb"] - 8 else "does not fit"
                     try:
                         if own and own.get("multi_file"):       # DeepSeek-V4.1-Flash: strata_control/dsv41_fit.py (cards + RAM, the n-gram table on the SSD)
@@ -1254,7 +1279,7 @@ class Strata:
                                        if ram >= d["ram_gb"] else
                                        "slow here: part of its experts in RAM, the rest read from the SSD (setup "
                                        "asks first)" if ram >= 48 else "does not fit")
-                        elif not d.get("mem_total") and S and S.low_ram_needed(m, ram) and S.low_ram_fits(m, ram, vram):
+                        elif not d.get("mem_total") and S and S.low_ram_needed(m, ram) and S.low_ram_fits(m, ram, xvram):
                             verdict = "fits in the low-RAM mode (slower: the GPU holds part of the experts)"
                     except Exception:                   # noqa: BLE001
                         pass

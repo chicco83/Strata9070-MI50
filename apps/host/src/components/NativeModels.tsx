@@ -98,7 +98,8 @@ export function NativeModels({ onOtherModels, onReady, onImport, onConnectEngine
     const changeRoles = (next: Roles) => setRoles(sameRoles(next, recommended.roles) ? null : next);
     const cardsGpus: number[] = roleCards.length > 1 ? roleOrder(effectiveRoles, roleCards) : [];
     const chosenCards = cardsGpus;
-    const fitHardware = { ram_gb: pcRam ? Math.max(0, pcRam - keptRam) : pcRam, vram_gb: Math.max(0, (roleCards.length > 1 ? vramOn(effectiveRoles, roleCards) : pcVram) - keptVramOn(chosenCards)) };
+    // This fork: + the experts the MI50 holds through the plugin (not one of the engine's cards, so not in roleCards).
+    const fitHardware = { ram_gb: pcRam ? Math.max(0, pcRam - keptRam) : pcRam, vram_gb: Math.max(0, (roleCards.length > 1 ? vramOn(effectiveRoles, roleCards) : pcVram) - keptVramOn(chosenCards)), helper_gb: native?.hardware?.expert_helper_gb ?? 0 };
     // A layer split written for another number of cards no longer fits: back to automatic.
     useEffect(() => { if (cardsGpus.length <= 1 && split !== 'auto') setSplit('auto'); }, [cardsGpus.length]);
     // Drafting (which drafter guesses ahead): DFlash2 is for Qwen3.8-Flash-Next only (the qwen and gyro families), so no other model is offered it.

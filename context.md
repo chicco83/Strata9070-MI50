@@ -1,11 +1,11 @@
-# context.md — versione 0.2.2-mi50.21 (2026-10-27 00:56)
+# context.md — versione 0.2.2-mi50.22 (2026-10-27 01:40)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
 Ryzen 5 9600X, 64 GB RAM. Regole: AGENTS.md, CLAUDE.md. Cronologia dettagliata: changelog.md. Piano due schede:
 PIANO_DUAL_GPU_2026-10-23.md.
 
-## Stato (2026-10-26)
+## Stato (2026-10-27)
 | Tema | Stato |
 |---|---|
 | Fix VRAM nel wizard (`apps/host/src/components/OnboardingMemory.tsx`) | ✅ entrato in upstream (commit 90a7aeea); la PR Niko1221/Strata#3798 risulta ancora aperta; ⏳ da riprovare nell'app (atteso Pro VII 0 GB, VRAM ~16 GB) |
@@ -24,6 +24,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | VRAM libera a 752–945 MiB all'inizio delle richieste | ⏳ valutare `--vram-reserve-mib` 1856 come consiglia il motore |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
+| Consiglio modelli e "Uses SSD" contano la MI50 (`strata_control/expert_helper.py`, `hardware.expert_helper_gb`) | ✅ nel codice con test (changelog 0.2.2-mi50.22); ⏳ da installare nell'app (componente Control + interfaccia); ⏸️ nessuna fascia sopra i 64 GB finché non si misura la velocità di UD-Q4_K_XL |
 | DFlash2 | ⛔ non adottato: più lento di MTP sulla 9070 e solo da riga di comando su una scheda |
 
 ## Fatti chiave (verificati)
