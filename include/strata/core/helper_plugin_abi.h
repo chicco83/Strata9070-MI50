@@ -10,7 +10,10 @@
 // 2 (2026-10-26): --remote-expert-opt through the plugin (open2, begin_opt, finish_opt); was 1
 // 3 (2026-10-26): the helper's adaptive expert swaps (adapt)
 // 4 (2026-10-27): the prompt path reads the experts the helper holds from its VRAM (copy_blobs, STRATA_PREFILL_HELPER_SOURCE)
-#define STRATA_HELPER_ABI_VERSION 4
+// 5 (2026-10-27): the helper computes a share of its experts in prompt reads (prefill_reserve / begin / finish)
+#define STRATA_HELPER_ABI_VERSION 5
+/// The oldest plugin ABI the engine still loads (4: no prefill_* functions, the helper then does not compute in prompt reads).
+#define STRATA_HELPER_ABI_MIN 4
 
 #if defined(_WIN32)
 #define STRATA_HELPER_EXPORT __declspec(dllexport)
@@ -76,6 +79,23 @@ typedef int (*strata_helper_adapt_t)(void* h, const float* usage, const int32_t*
 // experts[i]).  0 = ok (the hits are complete); otherwise err says why and the caller reads the rest from its fallback.
 typedef int (*strata_helper_copy_blobs_t)(void* h, const int32_t* layers, const int32_t* experts, uint8_t* const* dst, int64_t n,
                                           uint8_t* hit, char* err, int err_len);
+
+// ---- version 5 (2026-10-27): STRATA_PREFILL_HELPER.  The helper computes, in prompt reads, the experts the engine marks in `take`
+// (experts it holds in its VRAM cache), in parallel with the engine's own GPU: gate/up MMQ, SwiGLU, down MMQ and the weighted sum per
+// token (fp16), all asynchronously on its own stream.  The engine downloads each layer's fp16 activations (T x n_embd), routed ids and
+// router weights (T x k) to host buffers, calls prefill_begin (returns once the work is queued), runs its own experts, then
+// prefill_finish and adds the returned sums in its combine.  PIANO_MI50_PROMPT_2026-10-27.md.
+/// Allocates the work space for chunks of up to `t_max` tokens (the helper's free VRAM decides: 0 = ok, otherwise `err`).  `layer_ok`
+/// (n_layers bytes) gets 1 for the layers it can compute (native IQ/Q formats MMQ covers, no Hadamard fold, no NVFP4 tail).  `x16` and
+/// `sum16` get its own page-locked host buffers (t_max x n_embd fp16): the engine may use them as the copy targets/sources.
+typedef int (*strata_helper_prefill_reserve_t)(void* h, int64_t t_max, uint8_t* layer_ok, int64_t n_layers, uint16_t** x16,
+                                               uint16_t** sum16, char* err, int err_len);
+/// Queues layer `layer` for `t` tokens: x16 (t x n_embd fp16), ids / w (t x k) router ids and weights, take[expert] != 0 the experts to
+/// compute (all must be in its cache).  Returns before the GPU is done; the host buffers are read before return.
+typedef int (*strata_helper_prefill_begin_t)(void* h, int64_t layer, int64_t t, int64_t k, const uint16_t* x16, const int32_t* ids,
+                                             const float* w, const uint8_t* take, char* err, int err_len);
+/// Waits for the queued layer and writes its per-token weighted sums (t x n_embd fp16) to `sum16`; `ms_wait` gets the host time waited.
+typedef int (*strata_helper_prefill_finish_t)(void* h, uint16_t* sum16, double* ms_wait, char* err, int err_len);
 
 #ifdef __cplusplus
 }

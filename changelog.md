@@ -1,4 +1,48 @@
-# changelog.md — versione 0.2.2-mi50.31 (2026-10-27 01:49)
+# changelog.md — versione 0.2.2-mi50.32 (2026-10-27 03:05)
+
+## 0.2.2-mi50.32 — 2026-10-27 03:05
+- **RAPPORTO PER LA MATTINA (leggi qui).** La MI50 ora calcola i suoi esperti anche **nella lettura dei prompt**, in parallelo alla 9070
+  (piano `PIANO_MI50_PROMPT_2026-10-27.md`). Il componente dell'app `0.1.51-mi50` è ricostruito e fissato, e la config dell'app
+  `%LOCALAPPDATA%\Strata\install\strata-iq3_s.json` ha ora `"env": {"STRATA_PREFILL_HELPER": "1", "STRATA_PREFILL_HELPER_FRAC": "0.66"}`
+  (backup `strata-iq3_s.json.bak-helperprefill-2026-10-27`). **Da provare nell'app**: carica il modello, incolla un documento lungo
+  (~10K token) e guarda il tempo di lettura; nel log compare la riga `strata prefill helper: ...` a ogni richiesta lunga. **Per spegnere**:
+  togli le due variabili da `env` (o `STRATA_PREFILL_HELPER` = `0`) e riavvia il modello: comportamento identico a prima.
+  Numeri misurati (due prompt da 9.560 e 12.279 token, motore caldo, contesto 64K, tok/s di lettura):
+  | Profilo dell'app | funzione spenta | accesa (0,66) | guadagno |
+  |---|---|---|---|
+  | «Leave 20% for my work» | 523 / 652 | **709 / 848** | +36% / +30% |
+  | «Full performance» | 954 / 1.120 | **1.021 / 1.178** | +7% / +5% |
+  Scrittura (decode) non peggiorata: 49–56 tok/s con la funzione accesa (profilo «Leave 20%», `bench4.py`), contro ~46–48 di prima. Testo:
+  stesse domande con funzione spenta e accesa (`turns2.py`, temperatura 0) danno risposte sensate sullo stesso contenuto, con piccole
+  differenze di formulazione dal primo turno (arrotondamenti fp16 e somma in altro ordine), nessun testo guasto.
+- **Frazione** (`STRATA_PREFILL_HELPER_FRAC` = quota degli esperti tenuti dalla MI50 che calcola lei, prompt 9.560 / 12.279 token):
+  | Profilo | 0,5 | 0,66 | 0,8 | 1,0 |
+  |---|---|---|---|---|
+  | «Leave 20%» | 645 / 792 | 709 / 848 | 712 / 837 | 747 / 839 |
+  | «Full performance» | 1.008 / 1.169 | 1.021 / 1.178 | 1.020 / 1.163 | 1.006 / 1.124 |
+  Scelto **0,66**: nel profilo «Full performance» è il migliore, in «Leave 20%» 0,8–1,0 non migliorano il prompt lungo (la 9070 aspetta
+  la MI50: 1,2–2,2 s di attesa contro ~1 s). Con 1,0 il prompt da 9.560 sale a 747 in «Leave 20%» ma scende a 1.006 in «Full performance».
+- **Come funziona.** Per ogni strato (di quelli sul percorso fuso nativo; ~27 su 48 in questo modello, il resto resta alla 9070) la frazione
+  scelta degli esperti che la MI50 tiene e la 9070 non ha residenti esce dallo streaming della 9070 (non si copiano più: da qui il guadagno
+  dell'attesa dei pesi). La 9070 manda alla MI50 le attivazioni fp16 (T x 2560), gli id e i pesi del router; la MI50 raggruppa le righe per
+  esperto, fa gate/up MMQ, SwiGLU, down MMQ dai blob della sua cache e restituisce **una somma pesata per token in fp16**; la 9070 la somma
+  nella combinazione (`moe_combine_peer16`). Le coppie (token, k) affidate escono dal raggruppamento della 9070 (`helper_mask`: id -1, peso 0).
+  Nuove funzioni del plugin (ABI 5, il plugin ABI 4 si carica ancora: senza le funzioni la MI50 non calcola nei prompt):
+  `strata_helper_prefill_reserve / begin / finish`.
+- **Dove va il tempo** (strumentato in questa versione): la 9070 spende ~2,8 s su 12 nel `begin` (attivazioni e id verso l'host), ma
+  quasi tutto è **attesa che la 9070 arrivi allo strato** (2.785 su 2.932 ms): la preparazione sull'host pesa ~150 ms. Non serve un thread
+  a parte. Resta come limite l'attesa della MI50 (~1 s in «Leave 20%») e la sincronizzazione per strato.
+- Memoria: l'area di lavoro della MI50 (attivazioni, MMQ, somme) sta nei ~512 MiB lasciati liberi all'apertura (`auto` ne lascia 512): nessuno
+  slot di cache tolto, nessun esperto in meno. Buffer pinned dell'host registrati anche nel runtime della 9070.
+- Limiti noti: solo pack nativi, senza fold Hadamard né NVFP4 (quegli strati restano alla 9070); non con più GPU nello stesso runtime,
+  con layer split o slot batch; solo blocchi con streaming completo (`stream_all`: prompt oltre la soglia, come il resto del percorso fuso).
+- Codice: `src/plugin/helper_prefill.{hpp,cu}` (nuovo), `src/plugin/helper_plugin.cpp`, `include/strata/core/helper_plugin_abi.h` (ABI 5),
+  `src/core/remote_experts.cpp` e `include/strata/core/remote_experts.hpp` (caricamento, `slot_ptr`, `prefill_*`), `src/prefill/prefill.cpp`
+  (`HelperPf`, `set_helper_prefill`, scelta degli esperti, begin/mask/finish/combine), `src/prefill/kernels.cu` (`helper_mask`),
+  `src/program/generate.cpp` (`STRATA_PREFILL_HELPER`, riga di rapporto), `CMakeLists.txt` (il plugin si collega a `strata_mmq`).
+- **Rollback**: funzione `STRATA_PREFILL_HELPER=0` o tolta dalla config. Codice: `git revert <questo commit>` (o
+  `git checkout a82d1146 -- <file>`, dove a82d1146 è il commit precedente: `a82d1146`), ricompilare motore (`C:\src\scriptsuild1201.cmd`)
+  e plugin (`buildplugin.cmd`), `python packaging/make_component_mi50.py --pin`. App: ripristinare `strata-iq3_s.json.bak-helperprefill-2026-10-27`.
 
 ## 0.2.2-mi50.31 — 2026-10-27 01:49
 - **Velocità della MI50 sulle moltiplicazioni degli esperti a blocchi grandi** (`mmq_expert_bench` della build gfx906 `C:\src\b906c`,

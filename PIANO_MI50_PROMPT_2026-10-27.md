@@ -88,8 +88,10 @@ Misurare con `STRATA_PREFILL_TIMING=1` il tempo della 9070 e l'attesa della MI50
 | Passo | Stato |
 |---|---|
 | Misure di partenza (righe, byte, velocità MI50) | ✅ 2026-10-27 |
-| Engine: scelta esperti, scaricamento id, begin/finish, combinazione | ⏳ |
-| Plugin ABI 5: prefill_begin / finish / reserve con MMQ | ⏳ |
-| Bilanciamento della frazione | ⏳ |
-| Correttezza e misure prima/dopo, entrambi i profili | ⏳ |
-| Componente dell'app ricostruito e fissato | ⏳ |
+| Engine: scelta esperti, scaricamento id, begin/finish, combinazione | ✅ 2026-10-27 (`HelperPf` in `prefill.cpp`, `helper_mask`; solo strati sul percorso fuso nativo) |
+| Plugin ABI 5: prefill_begin / finish / reserve con MMQ | ✅ 2026-10-27 (`src/plugin/helper_prefill.cu`; area di lavoro nei 512 MiB liberi, nessuno slot tolto) |
+| Bilanciamento della frazione | ✅ default 0,66 (provati 0,5 / 0,66 / 0,8 / 1,0 in entrambi i profili; tabella in changelog 0.2.2-mi50.32) |
+| Correttezza e misure prima/dopo, entrambi i profili | ✅ «Leave 20%» 709/848 contro 523/652 tok/s (+36%/+30%); «Full performance» 1.021/1.178 contro 954/1.120 (+7%/+5%); decode 49–56 tok/s; testo sensato (`turns2.py`) |
+| Componente dell'app ricostruito e fissato | ✅ 2026-10-27 `make_component_mi50.py --pin`; config dell'app con `STRATA_PREFILL_HELPER=1` e `_FRAC=0.66` (backup `.bak-helperprefill-2026-10-27`); ⏳ prova nell'app dall'utente |
+
+Rollback aggiornato: `STRATA_PREFILL_HELPER=0` (o via dalla config); codice `git revert` del commit di questo piano (precedente `a82d1146`); app: ripristinare il backup della config.

@@ -82,6 +82,20 @@ public:
     bool copy_cached_blobs(const int32_t* layers, const int32_t* experts, uint8_t* const* dst, size_t n,
                            uint8_t* hit, std::string& err);
 
+    /// 2026-10-27 STRATA_PREFILL_HELPER (ABI 5): the helper computes a share of the prompt's experts.  prefill_supported():
+    /// the plugin has the entry points.  prefill_reserve / begin / finish: see helper_plugin_abi.h.
+    bool prefill_supported() const;
+    bool prefill_reserve(int64_t t_max, std::vector<uint8_t>& layer_ok, uint16_t** x16, uint16_t** sum16, std::string& err);
+    bool prefill_begin(int64_t layer, int64_t t, int64_t k, const uint16_t* x16, const int32_t* ids, const float* w,
+                       const uint8_t* take, std::string& err);
+    bool prefill_finish(uint16_t* sum16, double* ms_wait, std::string& err);
+    /// Plugin side: the device address of (layer, expert)'s blob in this tier's cache, nullptr when not held (or in a plugin forwarder).
+    const uint8_t* slot_ptr(int64_t layer, int32_t expert) const {
+        if (plugin_ != nullptr || device_ < 0) return nullptr;
+        const int32_t s = cache_.slot_of(layer, expert);
+        return s < 0 ? nullptr : cache_.device_slot(s);
+    }
+
 private:
     friend class RemoteExpertOpt;
     void* plugin_ = nullptr;   ///< the plugin's handle when this tier runs in the helper plugin (set_plugin)

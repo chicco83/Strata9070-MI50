@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.31 (2026-10-27 01:49)
+# context.md — versione 0.2.2-mi50.32 (2026-10-27 03:05)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -22,7 +22,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Lettura dei prompt grandi | ✅ a motore caldo 850–1.050 tok/s, limitata dalla 9070; lettura dei pesi dalla MI50 (ABI 4) provata, nessun guadagno, spenta (changelog 0.2.2-mi50.21); ⏳ in scrittura ancora 125–310 MB/s dal disco: più RAM per gli esperti |
 | Profilo «Full performance» dell'app | ✅ misurato: lettura del prompt +65–75% (921–1.077 contro 523–655 tok/s), scrittura uguale; la differenza è `--resident-budget-gib 39` (parte degli esperti letti dal disco). Scelta del profilo lasciata all'utente (changelog 0.2.2-mi50.29) |
 | Contesto nella config dell'app | ⚠️ ora 128K (`--max-context 131072`): misure dell'app non confrontabili con quelle a 64K |
-| MI50 nella lettura dei prompt | ⏳ misurato: la MI50 tiene gli esperti del 50–52% delle righe; calcola a ~0,79 µs per riga contro 0,40–0,45 della 9070; stima 15–25% sulla lettura dei prompt (tetto ~30%), lavoro di più giorni; da decidere (changelog 0.2.2-mi50.31) |
+| MI50 nella lettura dei prompt | ✅ implementato e misurato (changelog 0.2.2-mi50.32, piano `PIANO_MI50_PROMPT_2026-10-27.md`): `STRATA_PREFILL_HELPER=1` (+`_FRAC`=0,66), plugin ABI 5; lettura +36%/+30% in «Leave 20%» (709/848 contro 523/652 tok/s), +7%/+5% in «Full performance» (1.021/1.178 contro 954/1.120); decode non peggiorato, testo sensato. ✅ nel componente `0.1.51-mi50` fissato e nella config dell'app; ⏳ da provare nell'app dall'utente |
 | VRAM libera a 752–945 MiB all'inizio delle richieste | ⏳ valutare `--vram-reserve-mib` 1856 come consiglia il motore |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
@@ -56,10 +56,11 @@ PIANO_DUAL_GPU_2026-10-23.md.
 - HIP SDK installati: 5.7 e 6.4 in `C:\Program Files\AMD\ROCm`; `HIP_PATH` di sistema punta al 5.7.
 
 ## Prossimi passi, in ordine
-0. **Ripresa (2026-10-27)**: profili misurati («Full performance» legge i prompt +65–75%) e MI50 nella lettura dei
-   prompt valutata (stima 15–25%, changelog 0.2.2-mi50.31). Da decidere con l'utente se implementarla: lettura a blocchi
-   dell'engine che manda alla MI50 le righe dei suoi esperti, plugin con MMQ gfx906 a blocchi grandi, ABI 5,
-   divisione bilanciata. Restano aperti: contesto contro velocità (l'app è a 128K), riserva di VRAM, più RAM per gli esperti.
+0. **Ripresa (2026-10-27 03:05)**: la MI50 calcola i suoi esperti nella lettura dei prompt (`STRATA_PREFILL_HELPER=1`, FRAC 0,66, ABI 5;
+   changelog 0.2.2-mi50.32): componente e config dell'app già aggiornati; ⏳ **da provare nell'app** dall'utente (spegnere: togliere le variabili da `env`).
+   Idee per migliorare ancora: strati non sul percorso fuso (oggi ~27 su 48 usano la MI50), attesa della MI50 (~1 s) con FRAC adattiva per strato,
+   sincronizzazione per strato (la 9070 aspetta il router prima di mandare le attivazioni). Restano aperti: contesto contro velocità (l'app è a 128K),
+   riserva di VRAM, più RAM per gli esperti.
 1. ✅ (2026-10-26) limite di commit 125,7 GiB, misure rifatte (changelog 0.2.2-mi50.12).
 2. ✅ (2026-10-26) integrato nell'app come componente fissato (changelog 0.2.2-mi50.16). Dopo ogni nuova build: rilanciare
    `python -I packaging/make_component_mi50.py --pin` (con l'app senza modello caricato).
@@ -76,6 +77,10 @@ PIANO_DUAL_GPU_2026-10-23.md.
    `STRATA_PLUGIN_ADAPT=0`. Da rimisurare su una conversazione lunga che cambia argomento.
 
 ## Decisioni (con il perché)
+- La MI50 calcola i suoi esperti nei prompt scegliendo **per esperto** (non per riga) prima dell'instradamento, e restituisce una somma fp16 per token (2026-10-27):
+  così gli esperti affidati escono dallo streaming della 9070 (il guadagno è soprattutto l'attesa dei pesi) e PCIe x4 porta ~4 GiB, non 11–15. Frazione 0,66 (non 1,0):
+  oltre, la 9070 aspetta la MI50 e in «Full performance» si perde. Non usati `--peer-device` / `--layer-split`: assumono un solo runtime HIP.
+  Nessun thread per la preparazione: il tempo di `begin` è attesa della 9070 (2.785 su 2.932 ms), non lavoro dell'host.
 - Plugin nello stesso processo, non un processo separato con IPC né Vulkan: più semplice e più veloce (PIANO_DUAL_GPU).
 - Non usato il toolset MSVC 14.40: non si è installato; risolto usando clang 20 (HIP SDK 6.4) per la build gfx906.
 - Scambi sulla MI50 con tetto 8 per giro, non 96 come le schede nello stesso runtime (2026-10-26): le copie del plugin sono

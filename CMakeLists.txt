@@ -750,9 +750,10 @@ if(STRATA_ENABLE_CUDA OR STRATA_ENABLE_HIP)
   # strata-mi50 (2026-10-23): the helper-GPU expert tier as a DLL for an engine on another HIP runtime (PIANO_DUAL_GPU_2026-10-23.md,
   # include/strata/core/helper_plugin_abi.h).  Only the Windows gfx906 build: the Radeon Pro VII / MI50 is seen there only by HIP 5.x.
   if(STRATA_HIP_GFX906 AND WIN32)
-    add_library(strata_helper_gfx906 SHARED src/plugin/helper_plugin.cpp)
+    # 2026-10-27: + helper_prefill.cu (ABI 5: the helper computes prompt experts through MMQ), linked with strata_mmq
+    add_library(strata_helper_gfx906 SHARED src/plugin/helper_plugin.cpp src/plugin/helper_prefill.cu)
     target_include_directories(strata_helper_gfx906 PRIVATE ${_strata_gpu_include_directories})
-    target_link_libraries(strata_helper_gfx906 PRIVATE strata_engine ${_strata_gpu_runtime_target})
+    target_link_libraries(strata_helper_gfx906 PRIVATE strata_engine strata_mmq ggml-base ${_strata_gpu_runtime_target})
   endif()
 
   # DFlash2 drafter tools (not built by default: cmake --build <dir> --target dflash2_parity dflash2_gemm_bench dflash2_attn_bench): the drafter against

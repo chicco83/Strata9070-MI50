@@ -92,6 +92,9 @@ struct HelperPlugin {
     strata_helper_finish_opt_t finish_opt = nullptr;
     strata_helper_adapt_t adapt = nullptr;           // ABI 3 (2026-10-26): adaptive swaps on the helper
     strata_helper_copy_blobs_t copy_blobs = nullptr; // ABI 4 (2026-10-27): the prompt path reads the helper's blobs
+    strata_helper_prefill_reserve_t pf_reserve = nullptr;   // ABI 5 (2026-10-27): the helper computes prompt experts
+    strata_helper_prefill_begin_t pf_begin = nullptr;
+    strata_helper_prefill_finish_t pf_finish = nullptr;
 };
 HelperPlugin& helper_plugin() { static HelperPlugin p; return p; }
 
@@ -113,7 +116,8 @@ bool load_helper_plugin(std::string& err) {
     }
     auto sym = [&](const char* n) { return (void*) GetProcAddress(m, n); };
     auto ver = (strata_helper_abi_version_t) sym("strata_helper_abi_version");
-    if (ver == nullptr || ver() != STRATA_HELPER_ABI_VERSION) { err = "helper plugin: " + p.dll + " has another ABI version"; return false; }
+    // 2026-10-27: ABI 4 plugins still load (no prefill_* functions); was: ver() != STRATA_HELPER_ABI_VERSION
+    if (ver == nullptr || ver() < STRATA_HELPER_ABI_MIN || ver() > STRATA_HELPER_ABI_VERSION) { err = "helper plugin: " + p.dll + " has another ABI version"; return false; }
     p.init = (strata_helper_init_t) sym("strata_helper_init");
     p.open = (strata_helper_open_t) sym("strata_helper_open");
     p.close = (strata_helper_close_t) sym("strata_helper_close");
@@ -127,6 +131,11 @@ bool load_helper_plugin(std::string& err) {
     p.finish_opt = (strata_helper_finish_opt_t) sym("strata_helper_finish_opt");
     p.adapt = (strata_helper_adapt_t) sym("strata_helper_adapt");
     p.copy_blobs = (strata_helper_copy_blobs_t) sym("strata_helper_copy_blobs");
+    if (ver() >= 5) {
+        p.pf_reserve = (strata_helper_prefill_reserve_t) sym("strata_helper_prefill_reserve");
+        p.pf_begin = (strata_helper_prefill_begin_t) sym("strata_helper_prefill_begin");
+        p.pf_finish = (strata_helper_prefill_finish_t) sym("strata_helper_prefill_finish");
+    }
     if (!p.init || !p.open || !p.close || !p.begin || !p.finish || !p.owns || !p.holds || !p.stats ||
         !p.open2 || !p.begin_opt || !p.finish_opt || !p.adapt || !p.copy_blobs) {
         err = "helper plugin: " + p.dll + " lacks an entry point";
@@ -601,6 +610,31 @@ bool RemoteExperts::adapt_swaps(const float* usage, const int32_t* primary, uint
         resident[base + s.in] = 1;
         ++swapped;
     }
+    return true;
+}
+
+bool RemoteExperts::prefill_supported() const {
+    const HelperPlugin& p = helper_plugin();
+    return plugin_ != nullptr && p.pf_reserve && p.pf_begin && p.pf_finish;
+}
+
+bool RemoteExperts::prefill_reserve(int64_t t_max, std::vector<uint8_t>& layer_ok, uint16_t** x16, uint16_t** sum16, std::string& err) {
+    if (!prefill_supported()) { err = "the helper plugin has no prefill entry points (ABI < 5)"; return false; }
+    char e[512] = {};
+    if (helper_plugin().pf_reserve(plugin_, t_max, layer_ok.data(), (int64_t) layer_ok.size(), x16, sum16, e, (int) sizeof e) != 0) { err = e; return false; }
+    return true;
+}
+
+bool RemoteExperts::prefill_begin(int64_t layer, int64_t t, int64_t k, const uint16_t* x16, const int32_t* ids, const float* w,
+                                  const uint8_t* take, std::string& err) {
+    char e[512] = {};
+    if (helper_plugin().pf_begin(plugin_, layer, t, k, x16, ids, w, take, e, (int) sizeof e) != 0) { err = e; return false; }
+    return true;
+}
+
+bool RemoteExperts::prefill_finish(uint16_t* sum16, double* ms_wait, std::string& err) {
+    char e[512] = {};
+    if (helper_plugin().pf_finish(plugin_, sum16, ms_wait, e, (int) sizeof e) != 0) { err = e; return false; }
     return true;
 }
 

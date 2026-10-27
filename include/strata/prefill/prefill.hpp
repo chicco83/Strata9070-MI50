@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 
-namespace strata::core { class PeerExperts; }
+namespace strata::core { class PeerExperts; class RemoteExperts; }
 namespace strata::kernels::cpu { class ExpertPool; }
 
 namespace strata::prefill {
@@ -179,6 +179,14 @@ public:
     /// rows per layer; the rest of the peer's experts are read by this GPU over P2P).  Allocates the peer's buffers for
     /// chunks of up to init's `chunk` tokens.  Needs P2P between the two cards.
     bool set_peer(core::PeerExperts* peer, int64_t cap_rows, std::string& err);
+
+    /// 2026-10-27 STRATA_PREFILL_HELPER (plugin ABI 5): the helper GPU (`helper`, the MI50 behind the plugin) computes the fraction `frac`
+    /// of the experts it holds that this GPU would stream, in the prompt path's fused layers, in parallel with this GPU; this GPU adds the
+    /// per-token sums it returns in its combine.  Allocates this side's buffers for chunks of up to init's `chunk` tokens and reserves
+    /// the helper's work space.  false with `err`: nothing is changed (the prompt path stays as it was).
+    bool set_helper_prefill(core::RemoteExperts* helper, double frac, std::string& err);
+    /// One line for the log: layers and experts the helper took and the time it kept this GPU waiting (empty when off or unused).
+    std::string helper_prefill_report(bool reset);
 
     /// Plan v0.3 P6: called after every chunk with the chunk's final multi-stream residual rows (device,
     /// T x hc*n_embd, valid until the next chunk) and the chunk's first position; the MTP draft layer builds its

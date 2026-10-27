@@ -8935,6 +8935,21 @@ int main(int argc, char** argv) {
                 err.clear();
             }
         }
+        // 2026-10-27 STRATA_PREFILL_HELPER=1 (opt-in; PIANO_MI50_PROMPT_2026-10-27.md): the helper GPU behind the plugin (the MI50)
+        // computes the fraction STRATA_PREFILL_HELPER_FRAC (default 0.66) of the experts it holds that this GPU would stream in the
+        // prompt path's fused layers, in parallel with this GPU.  Off (default): the prompt path is as it was.
+        if (const char* hv = std::getenv("STRATA_PREFILL_HELPER"); hv != nullptr && std::atoi(hv) != 0 && !multi_gpu && stages.empty() &&
+            o.batch <= 0 && !prefill_helpers.empty()) {
+            double frac = 0.66;
+            if (const char* fv = std::getenv("STRATA_PREFILL_HELPER_FRAC")) frac = std::clamp(std::atof(fv), 0.0, 1.0);
+            std::string herr;
+            bool on = false;
+            for (strata::core::RemoteExperts* h : prefill_helpers)
+                if (h->prefill_supported() && sp.set_helper_prefill(h, frac, herr)) { on = true; break; }
+            if (on) std::fprintf(stderr, "strata serve: the helper GPU computes %.0f%% of the experts it holds in prompt reads (STRATA_PREFILL_HELPER)\n",
+                                 100.0 * frac);
+            else std::fprintf(stderr, "strata serve: STRATA_PREFILL_HELPER is off: %s\n", herr.empty() ? "no helper with the prefill entry points" : herr.c_str());
+        }
         // a layer split: a one-chunk prompt runs the stages one after the other, so each stage's prompt path gets the
         // next stage's GPU (the last one the first's) to stream and compute a share of its experts meanwhile
         if (multi_gpu && !stages.empty()) {
@@ -11081,6 +11096,7 @@ int main(int argc, char** argv) {
             };
         }
         auto mi50s_flush = [&] {
+            if (const std::string hr = sp.helper_prefill_report(true); !hr.empty()) { std::fprintf(stderr, "%s\n", hr.c_str()); std::fflush(stderr); }
             if (!mi50s.on || mi50s.chunks == 0) return;
             const int64_t all = mi50s.rows[0] + mi50s.rows[1] + mi50s.rows[2];
             const char* nm[3] = {"resident primary", "held by helper", "streamed"};

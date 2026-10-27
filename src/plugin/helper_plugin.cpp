@@ -7,6 +7,7 @@
 #include "strata/core/remote_experts.hpp"
 #include "strata/core/remote_expert_opt.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
+#include "helper_prefill.hpp"
 
 #include <cuda_runtime.h>
 
@@ -34,6 +35,9 @@ struct Tier {
     // 2026-10-26: --remote-expert-opt (ABI 2).  Declared after `remote`, so it is destroyed first (its destructor uses remote).
     std::unique_ptr<strata::core::RemoteExpertOpt> opt;
     int64_t tokens = 0, k = 0;   ///< the window begin_opt reduced
+    // 2026-10-27: STRATA_PREFILL_HELPER (ABI 5): the work space of the prompt path's expert share
+    strata::plugin::PrefillWs* pf = nullptr;
+    ~Tier() { strata::plugin::prefill_destroy(pf); }
 };
 }  // namespace
 
@@ -160,6 +164,30 @@ STRATA_HELPER_EXPORT int strata_helper_copy_blobs(void* h, const int32_t* layers
                                                   int64_t n, uint8_t* hit, char* err, int err_len) {
     std::string e;
     if (!((Tier*) h)->remote.copy_cached_blobs(layers, experts, dst, (size_t) n, hit, e)) { put(err, err_len, e); return 1; }
+    return 0;
+}
+
+STRATA_HELPER_EXPORT int strata_helper_prefill_reserve(void* h, int64_t t_max, uint8_t* layer_ok, int64_t n_layers, uint16_t** x16,
+                                                       uint16_t** sum16, char* err, int err_len) {
+    Tier& t = *(Tier*) h;
+    std::vector<uint8_t> ok((size_t) n_layers, 0);
+    std::string e;
+    if (!strata::plugin::prefill_reserve(t.pf, state().device, t_max, ok, x16, sum16, e)) { put(err, err_len, e); return 1; }
+    std::memcpy(layer_ok, ok.data(), ok.size());
+    return 0;
+}
+
+STRATA_HELPER_EXPORT int strata_helper_prefill_begin(void* h, int64_t layer, int64_t t, int64_t k, const uint16_t* x16, const int32_t* ids,
+                                                     const float* w, const uint8_t* take, char* err, int err_len) {
+    Tier& tr = *(Tier*) h;
+    std::string e;
+    if (!strata::plugin::prefill_begin(tr.pf, tr.remote, layer, t, k, x16, ids, w, take, e)) { put(err, err_len, e); return 1; }
+    return 0;
+}
+
+STRATA_HELPER_EXPORT int strata_helper_prefill_finish(void* h, uint16_t* sum16, double* ms_wait, char* err, int err_len) {
+    std::string e;
+    if (!strata::plugin::prefill_finish(((Tier*) h)->pf, sum16, ms_wait, e)) { put(err, err_len, e); return 1; }
     return 0;
 }
 
