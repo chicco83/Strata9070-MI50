@@ -1,4 +1,14 @@
-# changelog.md — versione 0.2.2-mi50.29 (2026-10-27 01:37)
+# changelog.md — versione 0.2.2-mi50.30 (2026-10-27 02:30)
+
+## 0.2.2-mi50.30 — 2026-10-27 02:30
+- Pulsante **Record log** si posiziona da solo (richiesta dell'utente: con `right: 114px` copriva «Expert mode» in Models e un
+  pulsante nel Monitor). `components/RecordLogButton.tsx` lo mette 12 px a sinistra del blocco `.main__actions` dell'intestazione
+  visibile (in chat, dei controlli nella metà destra di `.chat-toolbar`) e lo centra in altezza sull'intestazione; si ricalcola a
+  ogni cambio del DOM, al ridimensionamento e al caricamento dei font (con un timer, non `requestAnimationFrame`, che si ferma a
+  finestra nascosta). Senza intestazione resta il `right: 114px` del CSS.
+- Verificato nell'anteprima simulata (`npm run preview:ui`, 1400×900): nessuna sovrapposizione in Models, Monitor, Skills, Tasks,
+  Serving e chat. Interfaccia ricompilata e installata in `host\dist` (copia precedente `host\dist.before-reclog`); nell'app vera
+  non ancora vista (era chiusa). Rollback: `git revert <questo commit>`, poi ricompilare e copiare `apps/host/dist`.
 
 ## 0.2.2-mi50.29 — 2026-10-27 01:37
 - **Profilo «Full performance» contro «Leave 20% for my work»** (contesto 64K, due giri ciascuno, `scripts/mi50-bench/prefill_bench.py`
