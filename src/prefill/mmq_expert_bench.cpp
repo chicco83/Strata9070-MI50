@@ -118,8 +118,11 @@ int main(int argc, char** argv) {
                           {"iq3_s gate/up", GGML_TYPE_IQ3_S, 1280, 2560},
                           {"iq4_nl down", GGML_TYPE_IQ4_NL, 2560, 640}};
     std::mt19937 rng(7);
+    // 2026-10-27: STRATA_MMQ_BENCH_NO_NVFP4=1 skips the NVFP4 cases (CUDA only: a HIP build exits on them)
+    const bool no_nvfp4 = std::getenv("STRATA_MMQ_BENCH_NO_NVFP4") != nullptr;
     for (int R : Rs)
         for (const Case& c : cases) {
+            if (no_nvfp4 && c.t == GGML_TYPE_NVFP4) continue;
             float ms = 0;
             const double tops = run_case(c, R, rng, &ms);
             std::printf("  R %4d  %-14s %8.3f ms  %7.1f TOPS\n", R, c.name, ms, tops);

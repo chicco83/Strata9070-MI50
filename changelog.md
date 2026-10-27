@@ -1,4 +1,26 @@
-# changelog.md — versione 0.2.2-mi50.30 (2026-10-27 02:30)
+# changelog.md — versione 0.2.2-mi50.31 (2026-10-27 01:49)
+
+## 0.2.2-mi50.31 — 2026-10-27 01:49
+- **Velocità della MI50 sulle moltiplicazioni degli esperti a blocchi grandi** (`mmq_expert_bench` della build gfx906 `C:\src\b906c`,
+  MMQ di ggml, 16 esperti a lancio, IQ3_S gate/up + IQ4_NL down come il pacchetto, pesi sintetici):
+  | righe per esperto | gate/up | down | int8 TOPS |
+  |---|---|---|---|
+  | 12 | 0,460 ms | 0,203 ms | ~3 |
+  | 120 | 1,169 ms | 0,607 ms | 10–11 |
+  | 190 | 1,530 ms | 0,869 ms | 11,5–13 |
+  | 600 | 4,928 ms | 2,636 ms | 12–13 |
+  Circa **0,79 µs per riga** (gate/up + down) a blocchi da prompt. La 9070, dagli stessi prompt col tempo dell'engine
+  (`STRATA_PREFILL_TIMING`, prompt da 12.274 token, config senza limite di RAM): gemm gate/up 2.163 + down 199 + dequant 258 ms per
+  5,89 milioni di righe = **0,40–0,45 µs per riga**. La MI50 è più lenta solo di ~1,8–2 volte per riga.
+- **Stima del guadagno** (prompt da 12K token, «Full performance»): oggi la parte esperti della 9070 è ~5,4 s su 11,4 (attesa dei pesi
+  2,8 s + calcolo 2,6 s). Dando alla MI50 ~2/3 delle righe dei suoi esperti, la 9070 calcola ~0,9 s in meno e non deve più farsi
+  arrivare ~20 GiB di pesi (quasi tutta l'attesa); la MI50 lavora ~1,7 s in parallelo. Parte esperti ~5,4 -> ~1,7 s: **tetto ~30%
+  sulla lettura dei prompt** (~1.050 -> ~1.500 tok/s); realistico **15–25%** per sincronizzazioni a ogni strato (48 strati x 2
+  blocchi), scambio sullo slot x4 (~4,2 GiB per richiesta) e formati misti del pacchetto. Con «Leave 20%» il margine è maggiore:
+  gli esperti tenuti dalla MI50 sono esclusi dalla RAM e oggi la 9070 li rilegge dal disco.
+- Vincoli trovati: la MI50 ha la VRAM piena di esperti (15,36 GiB): per i buffer del calcolo a blocchi (~0,3–0,5 GiB) va lasciato
+  spazio togliendo ~200 esperti; la divisione va bilanciata (non tutte le righe alla MI50, altrimenti diventa lei il collo).
+- Codice: `mmq_expert_bench` accetta `STRATA_MMQ_BENCH_NO_NVFP4=1` (salta i casi NVFP4, che la build HIP non copre).
 
 ## 0.2.2-mi50.30 — 2026-10-27 02:30
 - Pulsante **Record log** si posiziona da solo (richiesta dell'utente: con `right: 114px` copriva «Expert mode» in Models e un
