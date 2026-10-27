@@ -26,7 +26,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | VRAM libera a 752–945 MiB all'inizio delle richieste | ⏳ valutare `--vram-reserve-mib` 1856 come consiglia il motore |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
-| Consiglio modelli e "Uses SSD" contano la MI50 (`strata_control/expert_helper.py`, `hardware.expert_helper_gb`) | ✅ nel codice con test (changelog 0.2.2-mi50.22); componente Control `0.1.51-mi50` e interfaccia installati nell'app il 2026-10-27 (changelog 0.2.2-mi50.25; con un Control ufficiale più nuovo rilanciare `make_control_mi50.py --pin`); ✅ verificato dall'utente nell'app aperta (2026-10-27: la scritta "Uses SSD 15 GB" su UD-Q4_K_XL è sparita); scheda "This computer" con la MI50 nominata e nel totale: ✅ nel codice, copiata in `host\dist` e verificata dall'utente nell'app aperta il 2026-10-27 (changelog 0.2.2-mi50.26); ⏸️ nessuna fascia sopra i 64 GB finché non si misura la velocità di UD-Q4_K_XL |
+| Consiglio modelli e "Uses SSD" contano la MI50 (`strata_control/expert_helper.py`, `hardware.expert_helper_gb`) | ✅ nel codice con test (changelog 0.2.2-mi50.22); componente Control `0.1.51-mi50` e interfaccia installati nell'app il 2026-10-27 (changelog 0.2.2-mi50.25; con un Control ufficiale più nuovo rilanciare `make_control_mi50.py --pin`); ✅ verificato dall'utente nell'app aperta (2026-10-27: la scritta "Uses SSD 15 GB" su UD-Q4_K_XL è sparita); scheda "This computer" con la MI50 nominata e nel totale: ✅ nel codice, copiata in `host\dist` e verificata dall'utente nell'app aperta il 2026-10-27 (changelog 0.2.2-mi50.26); ⏸️ nessuna fascia sopra i 64 GB finché non si misura la velocità di UD-Q4_K_XL (⏳ misura da fare, "Prossimi passi" 7) |
 | DFlash2 | ⛔ non adottato: più lento di MTP sulla 9070 e solo da riga di comando su una scheda |
 
 ## Fatti chiave (verificati)
@@ -64,6 +64,11 @@ PIANO_DUAL_GPU_2026-10-23.md.
 4. ✅ (2026-10-26) `--remote-expert-opt` nel plugin (changelog 0.2.2-mi50.14). Da usare sempre con le due schede: config `strata-dualopt.json`.
 6. Punti aperti dall'analisi della chat di prova (changelog 0.2.2-mi50.17), in ordine: ✅ costo fisso dei turni brevi (`--short-read 512`); riserva di VRAM;
    contesto più grande contro velocità; far lavorare la MI50 anche nella lettura del prompt (oggi ferma, CPU al 100%).
+7. ⏳ (richiesta dell'utente, 2026-10-27) **Misura di UD-Q4_K_XL contro IQ3_S sulle due schede** (9070 + MI50, `bench.py` come per
+   `strata-dualopt.json`): velocità di scrittura e lettura del prompt, letture dal disco, con lo stesso prompt e contesto. Serve per
+   decidere se aggiungere una fascia di memoria sopra i 64 GB (oggi il consiglio resta IQ3_S: `MEMORY_TIERS` in `setup.py` e
+   `tools/strata_mcp.py`, `native-fit.ts`). UD-Q4_K_XL: 77 GB di esperti, download 111 GB, ~78 GB RAM + VRAM (con la MI50 non
+   legge più dall'SSD secondo il calcolo dell'app, da confermare con la misura). Non scaricarlo senza chiedere: è già presente solo IQ3_S.
 5. ✅ (2026-10-26) scambi adattivi sulla MI50 (changelog 0.2.2-mi50.15): tetto `STRATA_PLUGIN_ADAPT_SWAPS` 8, spegnibili con
    `STRATA_PLUGIN_ADAPT=0`. Da rimisurare su una conversazione lunga che cambia argomento.
 
