@@ -3526,5 +3526,21 @@
   "s9034": "Cargando el modelo…",
   "s9035": "Faltan estos archivos del modelo: {0}.",
   "s9036": "Pulse de nuevo «Descargar y cargar» para obtenerlos. Los archivos que ya están se conservan. Si vuelven a aparecer los mismos archivos, abra los detalles y compártalos cuando pida ayuda.",
-  "s9037": "Esta actualización se interrumpió cuando la aplicación se reinició. Una actualización posterior terminó, así que no hay nada que hacer."
+  "s9037": "Esta actualización se interrumpió cuando la aplicación se reinició. Una actualización posterior terminó, así que no hay nada que hacer.",
+  "s9038": "El tamaño más rápido. La calidad más baja de los cuatro.",
+  "s9039": "Cerca de Q2_0 en velocidad, con algo más de calidad.",
+  "s9040": "Mejor calidad, pero más lento: más trabajo de CPU por token.",
+  "s9041": "La mejor calidad de los cuatro (igual al modelo completo en las pruebas publicadas) y el más lento. Necesita un PC de 64 GB.",
+  "s9042": "Piensa mucho menos antes de responder, con una calidad parecida. Velocidad y memoria como el mismo tamaño del original.",
+  "s9043": "Para código: conserva la mitad de los expertos que usan el código, las herramientas y las imágenes. Más débil fuera del código. Necesita unos 32 GB de RAM.",
+  "s9044": "Unos 4 bits: más calidad que IQ3_S. Con menos de unos 80 GB de RAM, parte del modelo se lee del SSD.",
+  "s9045": "4 bits: más calidad que UD-IQ4_XS, y más memoria.",
+  "s9046": "5 bits: cerca de Q8_0 en calidad.",
+  "s9047": "6 bits: aún más cerca del modelo completo.",
+  "s9048": "8 bits: la calidad de referencia, para un PC con unos 192 GB de RAM.",
+  "s9049": "La opción más pequeña, para PC con poca memoria. Menor calidad.",
+  "s9050": "Calidad similar a IQ3_XXS con un 20 % menos de memoria gráfica. Algo más lento.",
+  "s9051": "Un modelo más pequeño (35B, 3B activos). 4 bits: la más pequeña de las tres versiones.",
+  "s9052": "Un modelo más pequeño (35B, 3B activos). 6 bits: más cerca del modelo completo.",
+  "s9053": "Un modelo más pequeño (35B, 3B activos). 8 bits: la más cercana al modelo completo."
 }

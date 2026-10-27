@@ -3,7 +3,7 @@ import { tr } from '../lib/i18n';
 import { Icon } from './ui';
 import { FloatingMenu } from './FloatingMenu';
 import { cx } from '../lib/format';
-import { versionNote, type CatalogVersion } from '../lib/native-catalog';
+import { versionAbout, type CatalogVersion } from '../lib/native-catalog';
 import { nvfp4Version } from '../lib/native-names';
 import { VERSION_GROUPS, fitOn, groupOpen, recommendedVersions, type FitHardware, type PcPick } from '../lib/native-fit';
 
@@ -57,7 +57,7 @@ export function VersionPicker({ versions, selectedId, hardware, onSelect, onOwnG
   const row = (v: CatalogVersion, label: string, note?: string) => {
     const fit = fitOn(v, hardware);
     const on = v.id === selectedId;
-    const line = versionNote(v.model);
+    const line = versionAbout(v);
     return <button key={`${label}-${v.id}`} role="menuitemradio" aria-checked={on} className={cx('version-row', on && 'is-on')} onClick={() => { onSelect(v.id); setOpen(false); }}>
       <span className="version-row__name"><span className="version-row__title">{tr(on ? <Icon name="check" size={14}/> : null)}<strong>{label}</strong>{tr(note ? <span className="muted"> · {tr(note)}</span> : null)}{tr(downloaded?.has(v.id) ? <span className="version-row__have">{tr("Downloaded")}</span> : null)}{tr(fit.known && fit.spillGb >= 1 ? <span className="version-row__ssd">{tr("Uses SSD {0} GB", [Math.round(fit.spillGb)])}</span> : null)}</span>{tr(line ? <small className="version-row__note muted">{line}</small> : null)}</span>
       <span className="version-row__ram">{gb(fit.memoryGb)}</span>

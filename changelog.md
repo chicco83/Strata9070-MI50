@@ -1,4 +1,19 @@
-# changelog.md — versione 0.2.2-mi50.27 (2026-10-27 02:00)
+# changelog.md — versione 0.2.2-mi50.28 (2026-10-27 03:00)
+
+## 0.2.2-mi50.28 — 2026-10-27 03:00
+- **Descrizione breve per ogni versione nella lista dei modelli** (richiesta dell'utente). `VERSION_ABOUT` in
+  `apps/host/src/lib/native-names.ts` (chiave `famiglia:modello`; tutte le taglie Swift condividono una riga) e `versionAbout()` in
+  `native-catalog.ts`; `VersionPicker.tsx` la mostra sotto il nome, nello stile della nota NVFP4 (che ha la precedenza). Solo cose
+  verificabili da `setup.py` (`about`), `docs/MODELS.md` e schede dei modelli: GSQ-RCO Q2_0/IQ2_XS/IQ3_XXS/IQ3_S, Swift, Coder,
+  Unsloth UD-IQ4_XS…Q8_0, Gyro-S/M, Qwen3.6 (3 taglie). **Nessuna riga** dove non c'è informazione (DeepSeek-V4.1-Flash, versioni
+  proprie): non si inventa. 16 stringhe nuove `s9038`–`s9053` in `en.json` e tradotte in zh/ja/de/es/ru/pt/ko (script
+  `scratchpad/add_version_about_locales.py`). Test in `tests/qa1-downloads.test.mjs`. ⏳ non ancora installata nell'app
+  (serve build + sostituzione di `host\dist`, da fare con l'app chiusa e con il sì dell'utente). Rollback: `git revert` del commit.
+- **Modelli uncensored: solo l'OrcaRouter esiste, non aggiunto al catalogo** (indagine, nessun download). `orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF`
+  (abliterated, Apache 2.0, repo ad accesso con consenso su Hugging Face): IQ2_XXS 52 GB, IQ2_M 63, **IQ3_XXS 73**, IQ3_M 82, IQ4_XS 97,
+  Q4_K_M 110, Q8_0 188 GB (circa), più MTP e mmproj. Di queste solo **IQ3_XXS è validata** con Strata (docs/ORCA.md: richiede `iq_pack.py --compat-bf16`
+  e una config a mano da checkout dei sorgenti; IQ3_M no: Q5_0 non supportato). Nel catalogo servirebbero una famiglia nuova, il download
+  con accesso consenso e la prova su questo PC: non fatto senza test. Altre varianti abliterated per Qwen3.8-Flash-Next non trovate.
 
 ## 0.2.2-mi50.27 — 2026-10-27 02:00
 - Pulsante **Record log** spostato di 1 cm a sinistra (richiesta dell'utente): `.record-log` `right: 76px` → `114px`

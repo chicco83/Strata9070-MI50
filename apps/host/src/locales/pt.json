@@ -3526,5 +3526,21 @@
   "s9034": "Carregando o modelo…",
   "s9035": "Estes arquivos do modelo estão faltando: {0}.",
   "s9036": "Pressione Baixar e carregar de novo para buscá-los. Os arquivos que já estão aí são mantidos. Se os mesmos arquivos aparecerem de novo, abra os Detalhes e compartilhe-os ao pedir ajuda.",
-  "s9037": "Esta atualização foi interrompida quando o aplicativo reiniciou. Uma atualização posterior terminou, então não há nada a fazer."
+  "s9037": "Esta atualização foi interrompida quando o aplicativo reiniciou. Uma atualização posterior terminou, então não há nada a fazer.",
+  "s9038": "O tamanho mais rápido. A menor qualidade dos quatro.",
+  "s9039": "Perto do Q2_0 em velocidade, com um pouco mais de qualidade.",
+  "s9040": "Melhor qualidade, mas mais lento: mais trabalho da CPU por token.",
+  "s9041": "A melhor qualidade dos quatro (igual ao modelo completo nos testes publicados) e o mais lento. Precisa de um PC de 64 GB.",
+  "s9042": "Pensa muito menos antes de responder, com qualidade parecida. Velocidade e memória como o mesmo tamanho do original.",
+  "s9043": "Para código: mantém a metade dos especialistas que código, ferramentas e imagens usam. Mais fraco fora do código. Precisa de cerca de 32 GB de RAM.",
+  "s9044": "Cerca de 4 bits: mais qualidade que o IQ3_S. Com menos de cerca de 80 GB de RAM, parte do modelo é lida do SSD.",
+  "s9045": "4 bits: mais qualidade que o UD-IQ4_XS, e mais memória.",
+  "s9046": "5 bits: perto do Q8_0 em qualidade.",
+  "s9047": "6 bits: ainda mais perto do modelo completo.",
+  "s9048": "8 bits: a qualidade de referência, para um PC com cerca de 192 GB de RAM.",
+  "s9049": "A menor opção, para PCs com pouca memória. Qualidade menor.",
+  "s9050": "Qualidade parecida com a do IQ3_XXS com cerca de 20% menos memória gráfica. Um pouco mais lento.",
+  "s9051": "Um modelo menor (35B, 3B ativos). 4 bits: a menor das três versões.",
+  "s9052": "Um modelo menor (35B, 3B ativos). 6 bits: mais perto do modelo completo.",
+  "s9053": "Um modelo menor (35B, 3B ativos). 8 bits: a mais próxima do modelo completo."
 }

@@ -125,6 +125,32 @@ test('the three NVFP4 versions have clear names and one line that tells them apa
   lib.setTranslationLanguage('en');
 });
 
+test('each version with something verifiable to say has one line on what it is for, translated; the NVFP4 note wins, the rest have none', async () => {
+  lib.setTranslationLanguage('en');
+  const line = (sourceFamily, model) => lib.versionAbout({ sourceFamily, model });
+  assert.match(line('qwen', 'Q2_0'), /fastest/i);
+  assert.match(line('qwen', 'IQ3_S'), /best quality/i);
+  assert.match(line('coder', 'IQ1_M'), /code/i);
+  assert.match(line('swift', 'IQ2_XS'), /thinks much shorter/i);
+  assert.equal(line('swift', 'IQ3_S'), line('swift', 'IQ2_XS'), 'every Swift size shares one line');
+  assert.match(line('gyro', 'Gyro-S'), /smallest/i);
+  assert.match(line('unsloth', 'Q8_0'), /reference quality/i);
+  assert.match(line('qwen36', 'UD-Q4_K_XL'), /35B/);
+  assert.equal(line('nvfp4', 'NVFP4-QAD'), lib.versionNote('NVFP4-QAD'), 'the NVFP4 versions keep their own note');
+  assert.equal(line('deepseek41', 'anything'), '', 'no line where nothing is known: nothing is invented');
+  assert.equal(line('qwen', 'UD-Q4_K_XL'), '');
+  const en = JSON.parse(readSource(new URL('../src/locales/en.json', import.meta.url), 'utf8'));
+  const known = new Set(Object.values(en));
+  const lines = Object.values(lib.VERSION_ABOUT);
+  assert.ok(lines.length >= 16);
+  for (const text of lines) assert.ok(known.has(text), `in the English catalog: ${text}`);
+  for (const language of ['zh', 'ja', 'de', 'es', 'ru', 'pt', 'ko']) {
+    lib.setTranslationLanguage(language);
+    for (const text of lines) assert.notEqual(lib.tr(text), text, `${language}: ${text}`);
+  }
+  lib.setTranslationLanguage('en');
+});
+
 test('4d: picture reading is on unless the person turned it off (no saved choice is not "off")', async () => {
   const { nativeFixture } = await import('./helpers/native-fixture.mjs');
   const { readFileSync, writeFileSync } = await import('node:fs');

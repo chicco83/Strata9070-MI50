@@ -3526,5 +3526,21 @@
   "s9034": "Das Modell wird geladen …",
   "s9035": "Diese Modelldateien fehlen: {0}.",
   "s9036": "Drücken Sie noch einmal auf „Herunterladen und laden“, um sie zu holen. Vorhandene Dateien bleiben erhalten. Werden dieselben Dateien wieder aufgelistet, öffnen Sie die Details und teilen Sie sie mit, wenn Sie um Hilfe bitten.",
-  "s9037": "Dieses Update wurde beim Neustart der App unterbrochen. Ein späteres Update ist abgeschlossen, Sie müssen nichts tun."
+  "s9037": "Dieses Update wurde beim Neustart der App unterbrochen. Ein späteres Update ist abgeschlossen, Sie müssen nichts tun.",
+  "s9038": "Die schnellste Größe. Die niedrigste Qualität der vier.",
+  "s9039": "In der Geschwindigkeit nah an Q2_0, mit etwas besserer Qualität.",
+  "s9040": "Bessere Qualität, aber langsamer: mehr CPU-Arbeit pro Token.",
+  "s9041": "Die beste Qualität der vier (entspricht dem vollen Modell in veröffentlichten Benchmarks) und die langsamste. Braucht einen PC mit 64 GB.",
+  "s9042": "Denkt vor der Antwort viel kürzer, bei etwa gleicher Qualität. Tempo und Speicher wie dieselbe Größe des Originals.",
+  "s9043": "Für Code: behält die Hälfte der Experten, die Code, Werkzeuge und Bilder nutzen. Außerhalb von Code schwächer. Braucht etwa 32 GB RAM.",
+  "s9044": "Etwa 4 Bit: bessere Qualität als IQ3_S. Bei weniger als etwa 80 GB RAM wird ein Teil des Modells von der SSD gelesen.",
+  "s9045": "4 Bit: bessere Qualität als UD-IQ4_XS, und mehr Speicher.",
+  "s9046": "5 Bit: in der Qualität nah an Q8_0.",
+  "s9047": "6 Bit: noch näher am vollen Modell.",
+  "s9048": "8 Bit: die Referenzqualität, für einen PC mit etwa 192 GB RAM.",
+  "s9049": "Die kleinste Option, für PCs mit wenig Speicher. Geringere Qualität.",
+  "s9050": "Etwa IQ3_XXS-Qualität mit etwa 20 % weniger Grafikspeicher. Etwas langsamer.",
+  "s9051": "Ein kleineres Modell (35 Mrd., 3 Mrd. aktiv). 4 Bit: die kleinste der drei Versionen.",
+  "s9052": "Ein kleineres Modell (35 Mrd., 3 Mrd. aktiv). 6 Bit: näher am vollen Modell.",
+  "s9053": "Ein kleineres Modell (35 Mrd., 3 Mrd. aktiv). 8 Bit: am nächsten am vollen Modell."
 }

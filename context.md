@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.26 (2026-10-27 01:45)
+# context.md — versione 0.2.2-mi50.28 (2026-10-27 03:00)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -27,6 +27,8 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
 | Consiglio modelli e "Uses SSD" contano la MI50 (`strata_control/expert_helper.py`, `hardware.expert_helper_gb`) | ✅ nel codice con test (changelog 0.2.2-mi50.22); componente Control `0.1.51-mi50` e interfaccia installati nell'app il 2026-10-27 (changelog 0.2.2-mi50.25; con un Control ufficiale più nuovo rilanciare `make_control_mi50.py --pin`); ✅ verificato dall'utente nell'app aperta (2026-10-27: la scritta "Uses SSD 15 GB" su UD-Q4_K_XL è sparita); scheda "This computer" con la MI50 nominata e nel totale: ✅ nel codice, copiata in `host\dist` e verificata dall'utente nell'app aperta il 2026-10-27 (changelog 0.2.2-mi50.26); ⏸️ nessuna fascia sopra i 64 GB finché non si misura la velocità di UD-Q4_K_XL (⏳ misura da fare, "Prossimi passi" 7) |
+| Descrizione breve per versione nella lista dei modelli (`VERSION_ABOUT`) | ✅ nel codice con test (changelog 0.2.2-mi50.28); ⏳ da installare nell'app (build + `host\dist`, app chiusa, chiedere all'utente) |
+| Modelli uncensored | ⏸️ solo OrcaRouter (IQ3_XXS validata, 73 GB, manuale: docs/ORCA.md); non nel catalogo, serve famiglia nuova + prova; ⏳ attesa dell'utente |
 | DFlash2 | ⛔ non adottato: più lento di MTP sulla 9070 e solo da riga di comando su una scheda |
 
 ## Fatti chiave (verificati)

@@ -1,12 +1,13 @@
 import type {NativeFamily,NativeSize} from './native';
 import {tr} from './i18n';
-import {nvfp4Version} from './native-names';
+import {nvfp4Version,versionAboutText} from './native-names';
 export interface CatalogVersion extends NativeSize{sourceFamily:string;edition:string;images:boolean}
 export interface CatalogModel extends Omit<NativeFamily,'sizes'>{sizes:CatalogVersion[]}
 export function nativeVersionLabel(model:string){const nv=nvfp4Version(model);if(nv)return tr(nv.name);return tr(({Q2_0:'Fastest',IQ2_XS:'Compact',IQ3_XXS:'Balanced',IQ3_S:'High quality',IQ1_M:'Coding','Gyro-S':'Smallest','Gyro-M':'Small memory','IST-DAS-1.75bpw':'Smallest','IST-DAS-2.00bpw':'Balanced','IST-DAS-2.25bpw':'Best quality'} as Record<string,string>)[model]??model);}
 export const catalogVersionLabel=(version:CatalogVersion)=>{const label=nativeVersionLabel(version.model);return [tr(version.edition),label===version.model&&version.edition?'':label].filter(Boolean).join(' · ');};
 /** The one line that says how a version differs from its neighbours (the three NVFP4 versions); empty for the rest. */
-export const versionNote=(model:string)=>{const nv=nvfp4Version(model);return nv?tr(nv.note):'';};
+export const versionNote=(model:string)=>{const nv=nvfp4Version(model);return nv?tr(nv.note):'';};/** What a version is for: the NVFP4 note, else the line for its family and size; empty where there is nothing verifiable to say. */
+export const versionAbout=(v:{sourceFamily:string;model:string})=>{const note=versionNote(v.model);if(note)return note;const text=versionAboutText(v.sourceFamily,v.model);return text?tr(text):'';};
 /** Display groups are distinct from the engine's installation family IDs. */
 export function nativeCatalogModels(families:NativeFamily[]):CatalogModel[]{
  if(!families.length)return[];
