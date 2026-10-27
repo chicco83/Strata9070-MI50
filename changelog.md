@@ -5,8 +5,9 @@
   l'uso comprendeva gli esperti della MI50 ma il totale era la sola 9070). `PcFitCard` riceve `helpers` (`hardware.expert_helpers`):
   la riga in alto diventa «AMD Radeon RX 9070 XT · 15.9 GB graphics memory + AMD Radeon Pro VII · 15.4 GB graphics memory · 61.7 GB RAM»
   e il totale della barra è 15,9 + 15,4 = 31,3 GB. Nessuna stringa nuova (riuso di quelle già nel catalogo). Test in `native-fit.test.mjs`.
-- ⏳ Build in `scratchpad\host-dist` (`index-DVYOBvJK.js`), **non ancora copiata** in `Programs\Strata\host\dist` (l'app era aperta):
-  chiudere l'app, `dist` → `dist.before-mi50-2` e copiare la build; rollback = rinominare `dist.before-mi50-2` in `dist`.
+- ✅ Copiata (app chiusa) in `Programs\Strata\host\dist`: 65 file, identici alla build di `scratchpad\host-dist` (confronto SHA-256),
+  `index.html` punta a `index-DVYOBvJK.js`; la `dist` precedente è in `dist.before-mi50-2`. Rollback = chiudere l'app, eliminare
+  `dist` e rinominare `dist.before-mi50-2` in `dist`. ⏳ Da guardare nell'app aperta: riga con la MI50 e barra «31.3 GB of 31.3 GB».
 
 ## 0.2.2-mi50.25 — 2026-10-27 01:25
 - **Installato nell'app** (con l'app chiusa; restava solo il server di prova `strata-prof-perf` di un'altra attività, non toccato):
