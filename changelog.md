@@ -1,4 +1,25 @@
-# changelog.md — versione 0.2.2-mi50.22 (2026-10-27 01:40)
+# changelog.md — versione 0.2.2-mi50.23 (2026-10-27 01:17)
+
+## 0.2.2-mi50.23 — 2026-10-27 01:17
+Punto di ripresa prima di una compattazione del contesto (nessuna modifica al codice).
+- **Profilo «Full performance» contro «Leave 20% for my work»**: misura lanciata e non ancora letta. Su questo PC (6 core,
+  scheda da 16 GB) l'unica differenza è la RAM: «work» = `--pool-workers 5 --vram-reserve-mib 1536 --resident-budget-gib 39`,
+  «performance» = nessun `--resident-budget-gib` (stessi 5 worker e 1536 MiB; `apps/host/server/native-resources.mjs`).
+  Config `C:\src\r9070-test\strata-prof-work.json` / `strata-prof-perf.json` (dalla config dell'app, contesto riportato a 64K),
+  risultati in `prof_pf_*.txt`, `prof_dec_*.txt` e nei log `strata-prof-work.log` / `strata-prof-perf.log`.
+- **La config dell'app ha ora il contesto a 128K** (`--max-context 131072`), cambiato nell'app o dal setup: le misure dell'app
+  da qui in poi non sono confrontabili con quelle a 64K.
+- **Far partecipare la MI50 alla lettura dei prompt** (richiesta dell'utente): a motore caldo la 9070 spende ~50% della lettura
+  negli esperti (attesa dei pesi dalla RAM 24–27%, calcolo 19–20%, resto ~5%), attenzione 18–22%. Proposta: la MI50 calcola gli
+  esperti che tiene (8.120 su 24.576) in parallelo alla 9070. Stima 10–20% sulla lettura, lavoro di più giorni (lettura a blocchi
+  dell'engine, plugin con calcolo su blocchi grandi, ABI 5). Primo passo proposto, non ancora fatto: misurare su una lettura vera
+  quante righe di esperti e quanti byte passerebbero alla MI50.
+- **Perché un solo runtime HIP non vede le due schede**: il runtime fa parte del driver; la 9070 vuole il ramo Adrenalin recente
+  (HIP 6/7), la MI50 col driver Radeon VII forzato usa il ramo Pro 31.0.21925 (HIP 5); i driver recenti non gestiscono più Vega.
+  Anche con un runtime unico (Linux, ROCm) l'engine è una build wave32 o wave64 per processo.
+- **Scheda madre** (oggi ASUS ROG STRIX B650-A GAMING WIFI, secondo slot dal chipset PCIe 4.0 x4): per togliere il limite serve
+  una X670E/X870E con due slot x16 dalla CPU in x8/x8 (ProArt Creator, Crosshair Hero, Taichi, MEG ACE/Godlike: da verificare nel
+  manuale). Guadagno atteso piccolo in scrittura (la 9070 è il collo), nullo in lettura finché la MI50 non vi partecipa.
 
 ## 0.2.2-mi50.22 — 2026-10-27 01:40
 - **Il consiglio dei modelli conta la MI50.** Prima l'app vedeva solo la 9070 (62 GB di RAM + 16 GB = 78 GB): l'elenco delle schede

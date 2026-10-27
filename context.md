@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.22 (2026-10-27 01:40)
+# context.md — versione 0.2.2-mi50.23 (2026-10-27 01:17)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -20,7 +20,9 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | Effetto della dimensione del contesto sulla velocità (64K → 128K e oltre) | ⏳ punto aperto: la KV sta tutta sulla 9070, più contesto = meno esperti in VRAM |
 | Turni brevi lenti: 82–255 token nuovi letti in 3,5–5,5 s | ✅ causa: soglia `--short-read` 64; con 512 ~125 token in 2,0 s invece di 6,5 (changelog 0.2.2-mi50.18); ⏳ da provare nell'app |
 | Lettura dei prompt grandi | ✅ a motore caldo 850–1.050 tok/s, limitata dalla 9070; lettura dei pesi dalla MI50 (ABI 4) provata, nessun guadagno, spenta (changelog 0.2.2-mi50.21); ⏳ in scrittura ancora 125–310 MB/s dal disco: più RAM per gli esperti |
-| Profilo «Full performance» dell'app | ⏳ tutte le misure finora con «Leave 20% for my work» |
+| Profilo «Full performance» dell'app | ⏳ misura lanciata il 2026-10-27, da leggere (`C:\src\r9070-test\prof_*.txt`, log `strata-prof-*.log`); differenza su questo PC: solo il limite di RAM (changelog 0.2.2-mi50.23) |
+| Contesto nella config dell'app | ⚠️ ora 128K (`--max-context 131072`): misure dell'app non confrontabili con quelle a 64K |
+| MI50 nella lettura dei prompt | ⏳ proposta (stima 10–20%, più giorni); primo passo: misurare righe e byte che passerebbero alla MI50 (changelog 0.2.2-mi50.23) |
 | VRAM libera a 752–945 MiB all'inizio delle richieste | ⏳ valutare `--vram-reserve-mib` 1856 come consiglia il motore |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
@@ -52,6 +54,9 @@ PIANO_DUAL_GPU_2026-10-23.md.
 - HIP SDK installati: 5.7 e 6.4 in `C:\Program Files\AMD\ROCm`; `HIP_PATH` di sistema punta al 5.7.
 
 ## Prossimi passi, in ordine
+0. **Ripresa (2026-10-27)**: leggere la misura dei profili (`prof_*.txt`); poi decidere se far partecipare la MI50 alla
+   lettura dei prompt, partendo dalla misura di righe e byte. Restano aperti: contesto contro velocità (l'app è a 128K),
+   riserva di VRAM (avvisi a 750–980 MiB liberi), più RAM per gli esperti (in scrittura 125–310 MB/s dal disco).
 1. ✅ (2026-10-26) limite di commit 125,7 GiB, misure rifatte (changelog 0.2.2-mi50.12).
 2. ✅ (2026-10-26) integrato nell'app come componente fissato (changelog 0.2.2-mi50.16). Dopo ogni nuova build: rilanciare
    `python -I packaging/make_component_mi50.py --pin` (con l'app senza modello caricato).
@@ -74,6 +79,8 @@ PIANO_DUAL_GPU_2026-10-23.md.
 - Non adottati (2026-10-27): `STRATA_PREFILL_HELPER_SOURCE=1` (nessun guadagno, la lettura dei prompt è limitata dalla 9070) e
   `STRATA_REMOTE_ZEROCOPY=0` (meno attesa della MI50, stessa velocità). Dopo il caricamento attendere ~2 min prima dei prompt
   grandi (copia dei pesi in RAM). Tutte le misure con il profilo «Leave 20% for my work».
+- Nessun cambio di scheda madre per ora (2026-10-27): con la 9070 come collo il passaggio della MI50 a x8 dalla CPU darebbe
+  pochi punti in scrittura; ha senso solo se la MI50 farà più lavoro (lettura dei prompt, strati interi).
 - DFlash2 non adottato (2026-10-26): sulla 9070 più lento di MTP su 2 prompt su 3, gira solo da riga di comando su una scheda
   (non con il server né con la MI50); upstream misura lo stesso sulla R9700 (changelog 0.2.2-mi50.13).
 - Codice: le modifiche per HIP 5.x / 6.4 sono limitate da `#if` alle build interessate; la forma precedente resta nel codice con data.
