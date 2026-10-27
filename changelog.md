@@ -1,4 +1,11 @@
-# changelog.md — versione 0.2.2-mi50.26 (2026-10-27 01:45)
+# changelog.md — versione 0.2.2-mi50.27 (2026-10-27 02:00)
+
+## 0.2.2-mi50.27 — 2026-10-27 02:00
+- Pulsante **Record log** spostato di 1 cm a sinistra (richiesta dell'utente): `.record-log` `right: 76px` → `114px`
+  (38 px = 1 cm a 96 dpi; `apps/host/src/styles/monitor.css`). Installato nell'app correggendo solo la regola nel CSS già
+  compilato (`host\dist\assets\index-BL2ZtsdC.css`, copia precedente in `scratchpad\index-BL2ZtsdC.css.before-record-log-114`),
+  senza ricompilare: nel clone di lavoro ci sono modifiche dell'interfaccia non committate di un'altra sessione. Non ancora
+  visto dall'utente (ricaricare la finestra dell'app). Rollback: rimettere `76px` o ricopiare il file salvato.
 
 ## 0.2.2-mi50.26 — 2026-10-27 01:45
 - **"This computer" nomina la MI50 e conta la sua memoria** (richiesta dell'utente: la barra diceva «31.3 GB of 15.9 GB» perché
