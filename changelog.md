@@ -1,4 +1,20 @@
-# changelog.md — versione 0.2.2-mi50.23 (2026-10-27 01:17)
+# changelog.md — versione 0.2.2-mi50.24 (2026-10-27 01:21)
+
+## 0.2.2-mi50.24 — 2026-10-27 01:21
+- **Componente Control `0.1.51-mi50` (versione 0.1.51.1)**: `packaging/make_control_mi50.py` copia il Control ufficiale 0.1.51
+  (`%LOCALAPPDATA%\Strata\components\control\0.1.51`) e ci mette sopra `tools/strata_mcp.py` e `strata_control/expert_helper.py`
+  del fork (0.2.2-mi50.22). Verificato prima: tutti gli altri file del bundle sono uguali al fork. Costruito e provato col suo
+  Python: `--version` = `build 0.1.51.1`, rilevamento con `expert_helper_gb` 15,4. **Non ancora attivo**: l'app oggi usa
+  `Programs\Strata\control` 0.1.51.
+- Perché 0.1.51.1: l'app sceglie il Control più nuovo tra quello accanto a `host` e quello di `components\control\active.json`,
+  a parità quello accanto a `host` (`apps/host/server/control-runtime.mjs` `findControl`). Un Control ufficiale 0.1.52 o più nuovo
+  vincerà di nuovo: rilanciare lo script con quello come base.
+- Interfaccia ricompilata in `scratchpad\host-dist` (cartella del progetto su Drive): rispetto a `Programs\Strata\host\dist`
+  installata (build del fork delle 00:23) cambiano solo `assets/index-*.js` e `assets/PdfPreview-*.js` (con le mappe).
+- Installazione, con l'app chiusa: (1) `python -I packaging/make_control_mi50.py --pin` (salva `active.json` in
+  `active.before-mi50.json`); (2) `host\dist` → `host\dist.before-mi50`, poi `scratchpad\host-dist` → `host\dist`.
+  Rollback: `python -I packaging/make_control_mi50.py --unpin`; eliminare `host\dist` e rinominare `host\dist.before-mi50` in `dist`
+  (originale ufficiale sempre in `host\dist.official-0.2.6`).
 
 ## 0.2.2-mi50.23 — 2026-10-27 01:17
 Punto di ripresa prima di una compattazione del contesto (nessuna modifica al codice).
@@ -21,7 +37,7 @@ Punto di ripresa prima di una compattazione del contesto (nessuna modifica al co
   una X670E/X870E con due slot x16 dalla CPU in x8/x8 (ProArt Creator, Crosshair Hero, Taichi, MEG ACE/Godlike: da verificare nel
   manuale). Guadagno atteso piccolo in scrittura (la 9070 è il collo), nullo in lettura finché la MI50 non vi partecipa.
 
-## 0.2.2-mi50.22 — 2026-10-27 01:40
+## 0.2.2-mi50.22 — 2026-10-27 01:13
 - **Il consiglio dei modelli conta la MI50.** Prima l'app vedeva solo la 9070 (62 GB di RAM + 16 GB = 78 GB): l'elenco delle schede
   viene dal motore HIP 6.4, che la Pro VII non la vede. Ora `strata_control/expert_helper.py` la trova tra le schede video di
   Windows (PCI 66A0/66A1/66A2/66A3/66A7/66AF o nome Pro VII / Radeon VII / MI50 / MI60), **solo se nel motore installato c'è
