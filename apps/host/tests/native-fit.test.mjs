@@ -43,6 +43,15 @@ test('this fork: the MI50 (expert helper through the plugin) holds experts, so l
   assert.equal(fitOn(q4, { ram_gb: 64, vram_gb: 0, helper_gb: 15.4 }).spillGb, fitOn(q4, { ram_gb: 64, vram_gb: 0 }).spillGb, 'no main card: the plugin does not run');
 });
 
+test('this fork: "This computer" names the helper card and counts it in the graphics memory total (no "31.3 GB of 15.9 GB")', async () => {
+  const card = await readFile(new URL('../src/components/PcFitCard.tsx', import.meta.url), 'utf8');
+  assert.match(card, /helpers\?: PcHelper\[\]/);
+  assert.match(card, /freeVram = Math\.max\(0, vramGb - \(inUse\?\.vramGb \?\? 0\)\) \+ helperGb/, 'the meter total is the main card plus what the helper holds');
+  assert.match(card, /h\.name, gb\(h\.expert_gb\)/, 'the helper is named in the header line');
+  const models = await readFile(new URL('../src/components/NativeModels.tsx', import.meta.url), 'utf8');
+  assert.match(models, /<PcFitCard [^>]*helpers=\{native\?\.hardware\?\.expert_helpers \?\? \[\]\}/);
+});
+
 test('unknown hardware gives no verdict instead of a made-up one', () => {
   const f = fitOn(swift, null);
   assert.equal(f.known, false); assert.equal(f.spillGb, 0); assert.equal(f.memoryGb, 36.5);

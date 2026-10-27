@@ -15,11 +15,16 @@ function Meter({ label, total, use }: { label: string; total: number; use: numbe
  * "This computer": the graphics memory and RAM, and what the chosen version would take of each. One plain line says whether it fits
  * or how much would be read from the SSD (the n-gram table, which always sits on the SSD, is not counted).
  */
-export function PcFitCard({ gpuName, ramGb, vramGb, fit, inUse = null }: { gpuName?: string | null; ramGb: number | null; vramGb: number; fit: Fit | null; inUse?: { ramGb: number; vramGb: number } | null }) {
-  const freeVram = Math.max(0, vramGb - (inUse?.vramGb ?? 0)), freeRam = ramGb ? Math.max(0, ramGb - (inUse?.ramGb ?? 0)) : 0;
+/** helpers (this fork): cards the engine cannot see that hold experts through a plugin (the MI50); named beside the main card and counted in the graphics memory figure. */
+export interface PcHelper { name: string; expert_gb: number }
+
+export function PcFitCard({ gpuName, ramGb, vramGb, fit, inUse = null, helpers = [] }: { gpuName?: string | null; ramGb: number | null; vramGb: number; fit: Fit | null; inUse?: { ramGb: number; vramGb: number } | null; helpers?: PcHelper[] }) {
+  const helperGb = vramGb > 0 ? helpers.reduce((n, h) => n + (h.expert_gb || 0), 0) : 0;
+  const freeVram = Math.max(0, vramGb - (inUse?.vramGb ?? 0)) + helperGb, freeRam = ramGb ? Math.max(0, ramGb - (inUse?.ramGb ?? 0)) : 0;
+  const cards = gpuName ? [tr("{0} · {1} graphics memory", [gpuName, gb(vramGb)]), ...(vramGb > 0 ? helpers : []).map(h => tr("{0} · {1} graphics memory", [h.name, gb(h.expert_gb)]))].join(' + ') : '';
   return <section className="st-card pc-card">
     <div><h2 className="h4">{tr("This computer")}</h2>
-      <p className="small muted">{tr(gpuName ? tr("{0} · {1} graphics memory", [gpuName, gb(vramGb)]) : tr("No supported graphics card reported by this installation."))}{ramGb ? tr(" · {0} RAM", [gb(ramGb)]) : ''}</p></div>
+      <p className="small muted">{tr(gpuName ? cards : tr("No supported graphics card reported by this installation."))}{ramGb ? tr(" · {0} RAM", [gb(ramGb)]) : ''}</p></div>
     {tr(fit?.known && vramGb > 0 ? <Meter label="Graphics memory" total={freeVram} use={fit.vramUseGb}/> : null)}
     {tr(fit?.known && ramGb ? <Meter label="RAM" total={freeRam} use={fit.ramUseGb}/> : null)}
     {tr(inUse ? <p className="xs muted">{tr("Models that stay loaded use about {0} GB of RAM and {1} GB of this card’s memory.", [inUse.ramGb, inUse.vramGb])}</p> : null)}
