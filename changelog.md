@@ -41,8 +41,9 @@
   verificabili da `setup.py` (`about`), `docs/MODELS.md` e schede dei modelli: GSQ-RCO Q2_0/IQ2_XS/IQ3_XXS/IQ3_S, Swift, Coder,
   Unsloth UD-IQ4_XS…Q8_0, Gyro-S/M, Qwen3.6 (3 taglie). **Nessuna riga** dove non c'è informazione (DeepSeek-V4.1-Flash, versioni
   proprie): non si inventa. 16 stringhe nuove `s9038`–`s9053` in `en.json` e tradotte in zh/ja/de/es/ru/pt/ko (script
-  `scratchpad/add_version_about_locales.py`). Test in `tests/qa1-downloads.test.mjs`. ⏳ non ancora installata nell'app
-  (serve build + sostituzione di `host\dist`, da fare con l'app chiusa e con il sì dell'utente). Rollback: `git revert` del commit.
+  `scratchpad/add_version_about_locales.py`). Test in `tests/qa1-downloads.test.mjs`. ✅ installata (app chiusa, sì dell'utente): build di HEAD 4ac9fee1 (senza le modifiche non committate di altre sessioni) in
+  `scratchpad\host-dist-new`, 65 file, `index-0SH7bJzh.js`, CSS con `.record-log` a 114 px; copiata in `Programs\Strata\host\dist`, la precedente in
+  `dist.before-version-about`. ⏳ da vedere dall'utente. Rollback: chiudere l'app, eliminare `dist` e rinominare `dist.before-version-about` in `dist`.
 - **Modelli uncensored: solo l'OrcaRouter esiste, non aggiunto al catalogo** (indagine, nessun download). `orcarouter/Qwen3.8-Flash-Next-Uncensored-GGUF`
   (abliterated, Apache 2.0, repo ad accesso con consenso su Hugging Face): IQ2_XXS 52 GB, IQ2_M 63, **IQ3_XXS 73**, IQ3_M 82, IQ4_XS 97,
   Q4_K_M 110, Q8_0 188 GB (circa), più MTP e mmproj. Di queste solo **IQ3_XXS è validata** con Strata (docs/ORCA.md: richiede `iq_pack.py --compat-bf16`
