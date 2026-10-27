@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.24 (2026-10-27 01:21)
+# context.md — versione 0.2.2-mi50.25 (2026-10-27 01:25)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -26,7 +26,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 | VRAM libera a 752–945 MiB all'inizio delle richieste | ⏳ valutare `--vram-reserve-mib` 1856 come consiglia il motore |
 | Allineamento a upstream Strata 0.2.6 | ✅ merge dc3a3b61, build ricompilate, nessun peggioramento (changelog 0.2.2-mi50.13) |
 | `--remote-expert-opt` con il plugin (somma sulla MI50, meno traffico PCIe) | ✅ +29% decode, +18% prompt rispetto alle due schede senza (changelog 0.2.2-mi50.14); scambi adattivi sulla MI50 ✅ con tetto 8 per giro, neutri sulle richieste brevi (changelog 0.2.2-mi50.15) |
-| Consiglio modelli e "Uses SSD" contano la MI50 (`strata_control/expert_helper.py`, `hardware.expert_helper_gb`) | ✅ nel codice con test (changelog 0.2.2-mi50.22); componente Control `0.1.51-mi50` e interfaccia pronti (changelog 0.2.2-mi50.24); ⏳ da installare nell'app (`make_control_mi50.py --pin` + `host\dist`); ⏸️ nessuna fascia sopra i 64 GB finché non si misura la velocità di UD-Q4_K_XL |
+| Consiglio modelli e "Uses SSD" contano la MI50 (`strata_control/expert_helper.py`, `hardware.expert_helper_gb`) | ✅ nel codice con test (changelog 0.2.2-mi50.22); componente Control `0.1.51-mi50` e interfaccia installati nell'app il 2026-10-27 (changelog 0.2.2-mi50.25; con un Control ufficiale più nuovo rilanciare `make_control_mi50.py --pin`); ⏳ da guardare nell'app aperta (sparita la scritta "Uses SSD 15 GB" su UD-Q4_K_XL); ⏸️ nessuna fascia sopra i 64 GB finché non si misura la velocità di UD-Q4_K_XL |
 | DFlash2 | ⛔ non adottato: più lento di MTP sulla 9070 e solo da riga di comando su una scheda |
 
 ## Fatti chiave (verificati)

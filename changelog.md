@@ -1,4 +1,15 @@
-# changelog.md — versione 0.2.2-mi50.24 (2026-10-27 01:21)
+# changelog.md — versione 0.2.2-mi50.25 (2026-10-27 01:25)
+
+## 0.2.2-mi50.25 — 2026-10-27 01:25
+- **Installato nell'app** (con l'app chiusa; restava solo il server di prova `strata-prof-perf` di un'altra attività, non toccato):
+  `make_control_mi50.py --pin` → `components\control\active.json` ora `{"version":"0.1.51.1","folder":"0.1.51-mi50"}`
+  (prima: 0.1.51, salvato in `active.before-mi50.json`); `Programs\Strata\host\dist` sostituita con la build di
+  `scratchpad\host-dist` (65 file, `index-B9C830C3.js` con `expert_helper_gb`), la precedente in `host\dist.before-mi50`.
+- Verificato: `findControl` sceglie `0.1.51-mi50` (con e senza `STRATA_CONTROL_DIR`); con il suo Python `strata_status` dà
+  `expert_helper_gb` 15,4 (Radeon Pro VII), il consiglio resta IQ3_S, UD-Q4_K_XL ha `memory_gb` 78. ⏳ **Non ancora guardato
+  nell'app aperta**: controllare che "Uses SSD 15 GB" accanto a UD-Q4_K_XL sia sparito.
+- Rollback: `python -I packaging/make_control_mi50.py --unpin`; chiudere l'app, eliminare `host\dist` e rinominare
+  `host\dist.before-mi50` in `dist`.
 
 ## 0.2.2-mi50.24 — 2026-10-27 01:21
 - **Componente Control `0.1.51-mi50` (versione 0.1.51.1)**: `packaging/make_control_mi50.py` copia il Control ufficiale 0.1.51
