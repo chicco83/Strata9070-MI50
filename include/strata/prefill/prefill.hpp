@@ -208,6 +208,9 @@ public:
     /// 149-prefetch (STRATA_RAM_ADAPT2): a layer's routed expert ids (T x k, -1 = none) after the prompt path downloaded them
     /// for its grouping on the host; a policy may count them. Not called on the paths that keep the ids on the GPU.
     std::function<void(int64_t layer, const int32_t* ids, int64_t n)> on_routes;
+    /// 2026-10-27 (measurement, STRATA_PREFILL_MI50_STATS): also download the ids on the fused path (a host sync a layer)
+    /// so on_routes sees every layer. Off: the fused path stays sync-free, as before.
+    bool on_routes_fused = false;
     int64_t stopped_at() const { return stopped_at_; }
     /// Grows this stage's (and the later stages') pinned upload slots to what a text chunk of `T` tokens uploads, so
     /// a run of such chunks allocates no pinned memory (STRATA_PIPED_CONCURRENT: an allocation or free on the read's

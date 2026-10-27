@@ -3661,6 +3661,12 @@ bool Prefill::run_impl(const int64_t* tokens, int64_t n, int64_t pos0, std::stri
                             std::fprintf(stderr, "strata: prompt experts on the fused int8 kernels (STRATA_PF_FUSED=1, "
                                                  "#136)\n");
                         }
+                        if (on_routes && on_routes_fused) {   // 2026-10-27 measurement only: a sync and a download a layer
+                            std::vector<int32_t> ids_h((size_t) (T * K));
+                            cudaStreamSynchronize(m.cs);
+                            cudaMemcpy(ids_h.data(), m.ids, ids_h.size() * sizeof(int32_t), cudaMemcpyDeviceToHost);
+                            on_routes(l, ids_h.data(), T * K);
+                        }
                         pt.mark(kPfGather, cs);
                         // the layer's input to int8 once per token; the rows of each expert from the router's ids
                         if (fused_nat) fused::quantize_act_native(m.mixed, T, N, m.Xq, m.cs);

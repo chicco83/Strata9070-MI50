@@ -1,4 +1,28 @@
-# changelog.md — versione 0.2.2-mi50.28 (2026-10-27 03:00)
+# changelog.md — versione 0.2.2-mi50.29 (2026-10-27 01:37)
+
+## 0.2.2-mi50.29 — 2026-10-27 01:37
+- **Profilo «Full performance» contro «Leave 20% for my work»** (contesto 64K, due giri ciascuno, `scripts/mi50-bench/prefill_bench.py`
+  dopo 120 s di riscaldamento e `bench4.py`): lettura del prompt **921 / 1.049–1.077 tok/s contro 523–528 / 652–655 tok/s**
+  (prompt da 9.560 / 12.279 token: +65–75%), scrittura uguale (~48 contro ~46 tok/s). Causa: con «work» (`--resident-budget-gib 39`)
+  l'engine passa alla modalità «resident RAM» con 25,5 GiB di esperti in RAM e legge il resto dai file (1.394 blocchi dal disco per
+  richiesta); con «performance» blocca in RAM tutto il complemento (arena di 40.290 MiB). **Correzione**: le misure 850–1.050 tok/s
+  della 0.2.2-mi50.22 erano con una config senza `--resident-budget-gib`, cioè di fatto «Full performance», non «Leave 20%».
+- **Misura per la MI50 nella lettura dei prompt** (`STRATA_PREFILL_MI50_STATS=1`, solo conteggio, nessun cambio di comportamento;
+  sul percorso fuso aggiunge una sincronizzazione per strato, quindi i tempi di quella misura non valgono). Su tutti i 48 strati,
+  top-10, prompt da 9.555 / 12.274 token in due blocchi:
+  | dove sta l'esperto | righe instradate | pesi letti per richiesta |
+  |---|---|---|
+  | in VRAM della 9070 | 16–17,5% | 6,2 GiB |
+  | **tenuto dalla MI50** | **50–52%** | **30,4 GiB** (~15,2 GiB a blocco: quasi tutti gli 8.123 esperti che tiene) |
+  | caricato in streaming | 31,5–32% | 45,6–47,5 GiB |
+  Oggi la 9070 calcola tutte le righe e si fa arrivare anche i 30,4 GiB che la MI50 ha già in VRAM. Se la MI50 calcolasse le sue righe
+  dovrebbe ricevere l'attivazione una volta per token e strato (int8: ~1,4 GiB per 12K token) e restituire la somma pesata (fp16:
+  ~2,8 GiB): ~4,2 GiB per richiesta sullo slot PCIe 4.0 x4, sovrapponibili al calcolo (contro 11–14,7 GiB per lato se si mandassero le
+  singole righe). **Rischio principale**: la MI50 calcola molto meno della 9070; se prendesse tutte le sue righe (metà del lavoro sugli
+  esperti) diventerebbe lei il collo. Va misurata la sua velocità sulle moltiplicazioni a blocchi grandi prima di scrivere il resto.
+- Codice: `STRATA_PREFILL_MI50_STATS` in `src/program/generate.cpp` (aggancio `on_routes`, stampa per richiesta), `Prefill::on_routes_fused`
+  in `include/strata/prefill/prefill.hpp` e `src/prefill/prefill.cpp` (scarica gli id anche sul percorso fuso, solo se richiesto).
+  Rollback: `git revert` del commit.
 
 ## 0.2.2-mi50.28 — 2026-10-27 03:00
 - **Descrizione breve per ogni versione nella lista dei modelli** (richiesta dell'utente). `VERSION_ABOUT` in
