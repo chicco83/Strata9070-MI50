@@ -18,7 +18,7 @@ function Meter({ label, total, use }: { label: string; total: number; use: numbe
 /** helpers (this fork): cards the engine cannot see that hold experts through a plugin (the MI50); named beside the main card and counted in the graphics memory figure. */
 export interface PcHelper { name: string; expert_gb: number }
 
-export function PcFitCard({ gpuName, ramGb, vramGb, fit, inUse = null, helpers = [] }: { gpuName?: string | null; ramGb: number | null; vramGb: number; fit: Fit | null; inUse?: { ramGb: number; vramGb: number } | null; helpers?: PcHelper[] }) {
+export function PcFitCard({ gpuName, ramGb, vramGb, fit, inUse = null, diskGb = null, helpers = [] }: { gpuName?: string | null; ramGb: number | null; vramGb: number; fit: Fit | null; inUse?: { ramGb: number; vramGb: number } | null; diskGb?: number | null; helpers?: PcHelper[] }) {
   const helperGb = vramGb > 0 ? helpers.reduce((n, h) => n + (h.expert_gb || 0), 0) : 0;
   const freeVram = Math.max(0, vramGb - (inUse?.vramGb ?? 0)) + helperGb, freeRam = ramGb ? Math.max(0, ramGb - (inUse?.ramGb ?? 0)) : 0;
   const cards = gpuName ? [tr("{0} · {1} graphics memory", [gpuName, gb(vramGb)]), ...(vramGb > 0 ? helpers : []).map(h => tr("{0} · {1} graphics memory", [h.name, gb(h.expert_gb)]))].join(' + ') : '';
@@ -28,6 +28,7 @@ export function PcFitCard({ gpuName, ramGb, vramGb, fit, inUse = null, helpers =
     {tr(fit?.known && vramGb > 0 ? <Meter label="Graphics memory" total={freeVram} use={fit.vramUseGb}/> : null)}
     {tr(fit?.known && ramGb ? <Meter label="RAM" total={freeRam} use={fit.ramUseGb}/> : null)}
     {tr(inUse ? <p className="xs muted">{tr("Models that stay loaded use about {0} GB of RAM and {1} GB of this card’s memory.", [inUse.ramGb, inUse.vramGb])}</p> : null)}
-    {tr(fit?.known ? <p className="pc-note">{tr(fit.spillGb >= 1 ? 'About {0} GB will be read from the SSD, so answers can be a little slower.' : 'Fits fully in memory.', [Math.round(fit.spillGb)])}</p> : null)}
+    {tr(diskGb ? <p className="pc-note">{tr("Needs about {0} GB of free disk space. What does not fit in memory is read from your SSD.", [Math.round(diskGb)])}</p> : null)}
+    {tr(fit?.known && (diskGb ? fit.spillGb >= 1 : true) ? <p className="pc-note">{tr(fit.spillGb >= 1 ? 'About {0} GB will be read from the SSD, so answers can be a little slower.' : 'Fits fully in memory.', [Math.round(fit.spillGb)])}</p> : null)}
   </section>;
 }
