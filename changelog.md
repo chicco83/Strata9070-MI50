@@ -1,4 +1,11 @@
-# changelog.md — versione 0.2.2-mi50.32 (2026-10-27 03:05)
+# changelog.md — versione 0.2.2-mi50.33 (2026-11-01 17:10)
+
+## 0.2.2-mi50.33 — 2026-11-01 17:10
+- **Sincronizzato con la release ufficiale v0.2.9** (`upstream/main`, 733 commit, merge `00ccc897`, **locale, non pushato**). 9 conflitti risolti: `prefill.cpp` (include), `generate.cpp` (lambda `run`: blocco nuovo di upstream con `co_run` e KVA + la nostra `mi50s_flush()`; blocco `STRATA_CRASH_TRACE` mantenuto), `windows-gpu.mjs` e `device-probes.mjs` (**presa la versione upstream**: ha la stessa temperatura D3DKMT, #3628; la nostra è sostituita), `PcFitCard`/`NativeModels`/`native.ts` (upstream `diskGb` + nostro `helpers`), `monitor.css` e `.gitignore` (entrambe).
+- ✅ Verificato: il motore (gfx1201, HIP 6.4, `C:\src1201m`) e il plugin (gfx906, HIP 5.7, `C:\src906m`) **compilano** dal merge. ⏳ **Non provato su GPU** (nessun prefill_bench né app); i test del passo A sotto sono sulla build precedente (b1201 / b906c, intatte).
+- Da valutare dopo il merge: finestre di verifica a 16 righe di default sulle build HIP (`STRATA_WINDOW_MAX_T`, `9d3c8c36`: motore e plugin vanno ricompilati insieme); `STRATA_GDN_CHUNKED=1` su gfx12 (il server lo accende solo su Linux); `native_supported` invariato, quindi il passo B (IQ2_S/IQ4_XS) resta valido.
+- **Passo A del piano `scratchpad/proposta_helper_prefill.md`** (build precedente, prompt 9.560 / 12.279 tok/s, FRAC 0,66): «Full performance» base 952 / 1129, con `STRATA_PF_FUSED=1` 1004 / 1156; «Leave 20%» base 682–709 / 818–841, con `STRATA_PF_FUSED=1` 895–908 / 977–1025; lanci della MI50 da 54 a 96 (48 strati su 48). Testo non verificato. Tabella: `scratchpad/risultati_passo_A.md`.
+- **Rollback del merge**: `git reset --hard 77008559` (il commit precedente; solo se non pushato) oppure `git revert -m 1 00ccc897`.
 
 ## 0.2.2-mi50.32 — 2026-10-27 03:05
 - **RAPPORTO PER LA MATTINA (leggi qui).** La MI50 ora calcola i suoi esperti anche **nella lettura dei prompt**, in parallelo alla 9070
