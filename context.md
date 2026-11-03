@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.33 (2026-11-01 17:10)
+# context.md — versione 0.2.2-mi50.34 (2026-11-03 20:45)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -56,6 +56,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 - HIP SDK installati: 5.7 e 6.4 in `C:\Program Files\AMD\ROCm`; `HIP_PATH` di sistema punta al 5.7.
 
 ## Prossimi passi, in ordine
+0c. **(2026-11-03)** Ramo sincronizzato con upstream **v0.2.10** (merge `83e4ce8d`, locale, ⏳ non pushato; 745 commit avanti); motore e plugin compilano (b1201m / b906m), test dell'app e di `strata_mcp.py` verdi, ⏳ **non provato su GPU**. Prima di fissare il componente nell'app: (1) rifare le misure del profilo «Leave 20%» con `--ram-keep-gib` (cambiato da upstream), (2) controllare decode con DFlash2 + plugin MI50, (3) prova rapida a macchina scarica; poi decidere il passo B. Valutazione completa: changelog 0.2.2-mi50.34.
 0b. **(2026-11-01)** Ramo sincronizzato con upstream v0.2.9 (merge `00ccc897`, locale, ⏳ non pushato); motore e plugin compilano (b1201m / b906m), ⏳ da provare su GPU. Passo A fatto (build precedente): `STRATA_PF_FUSED=1` porta la MI50 a 48 strati su 48 e il prompt a +5%/+30% (Full / Leave 20%): ⏳ decidere il passo B (`STRATA_PF_FUSED_EXTRA`), vedi changelog 0.2.2-mi50.33.
 0. **Ripresa (2026-10-27 03:05)**: la MI50 calcola i suoi esperti nella lettura dei prompt (`STRATA_PREFILL_HELPER=1`, FRAC 0,66, ABI 5;
    changelog 0.2.2-mi50.32): componente e config dell'app già aggiornati; ⏳ **da provare nell'app** dall'utente (spegnere: togliere le variabili da `env`).
