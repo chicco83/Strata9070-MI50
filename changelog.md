@@ -1,4 +1,15 @@
-# changelog.md — versione 0.2.2-mi50.43 (2026-11-06 17:40)
+# changelog.md — versione 0.2.2-mi50.44 (2026-11-06 18:10)
+
+## 0.2.2-mi50.44 — 2026-11-06 18:10
+- **DFlash2 contro MTP nel profilo «Full performance»** (motore `C:\src\b1201m\strata.exe` e plugin `b906m` lanciati dalle configurazioni di prova `v10-perf-new-0.66.json` = MTP e `v15-perf-df2.json` = MTP sostituito da DFlash2; contesto 65536, helper FRAC 0,66; stesso `scratchpad/dec2.py` di .43 con prompt «lungo» da 3.366 token). Velocità lette dal registro del motore (`C:\src\r9070-test\v10-perf-new-0.66.log`, aggiunto in coda dalle due esecuzioni).
+  | Prova | MTP | DFlash2 |
+  |---|---|---|
+  | decode codice, tok/s (3 prompt da 400 token) | 47,4 / 50,0 / 44,5 (media 47,3) | 46,8 / 52,1 / 48,5 (media 49,1) |
+  | bozze accettate, codice | 192/276, 247/319, 189/298 (~70%) | 197/274, 255/316, 216/326 (~71%) |
+  | prompt da 3.366 token: lettura / decode (tok/s) | 503 / 38,7 poi 42,3 | 503 / 37,5 poi 37,6 |
+- **Lettura**: in «Full performance» DFlash2 e MTP sono alla pari (+4% sul codice, dentro il rumore). Quindi il +35% su codice visto in «Leave 20%» (changelog .43) viene dal fatto che lì l'MTP rallenta (36,6 tok/s, contro 47,3 in «Full performance») mentre DFlash2 resta stabile intorno a 49 tok/s in entrambi i profili. Possibile spiegazione (non verificata): in «Leave 20%» più esperti sono letti da RAM/disco e le finestre più larghe di DFlash2 ammortizzano meglio quelle letture. Conclusione: DFlash2 conviene soprattutto in «Leave 20%» sul codice; negli altri casi è pari. Nessuna modifica al codice.
+- **Trappola**: due configurazioni che condividono lo stesso campo `log` scrivono nello stesso file (in coda): per separarle serve un `log` diverso per ognuna o leggere i blocchi per ordine.
+- **Rollback**: nessuno (solo misure e documenti).
 
 ## 0.2.2-mi50.43 — 2026-11-06 17:40
 - **DFlash2 contro MTP su prompt di codice e a contesto lungo (~100K token), nell'app reale** (stessa configurazione di 0.2.2-mi50.42: «Leave 20%», componente sul merge v0.2.11, plugin MI50 con helper FRAC 0,66, contesto 131072; `app-real.json` = MTP, `app-df2.json` = DFlash2). Script `scratchpad/dec2.py`: riscaldamento, 3 prompt di codice da 400 token (LRU cache in Python, lista collegata in C++, script bash di backup), poi un prompt di ~100.228 token (sorgenti del repo) con 300 token di risposta, ripetuto una seconda volta (riuso del prompt in cache). Velocità lette dal registro del motore (`strata serve:`).
