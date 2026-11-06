@@ -1,4 +1,4 @@
-# manual.md — versione 0.2.2-mi50.36 (2026-11-06 09:50)
+# manual.md — versione 0.2.2-mi50.37 (2026-11-06 11:40)
 
 Per riaprire il wizard: scrivere `/setup` nella chat (o "Run setup" nella tavolozza comandi).
 
