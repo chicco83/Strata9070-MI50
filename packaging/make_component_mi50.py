@@ -19,8 +19,8 @@ NAME = "0.1.51-mi50-windows-x86_64-hip-rx9070"
 OUT = ENGINES / NAME
 STATE = LOCAL / "Strata" / "components" / ".updates" / "state.json"
 ROCM = Path(r"C:\Program Files\AMD\ROCm\6.4\bin")
-ENGINE = Path(r"C:\src\b1201\strata.exe")
-PLUGIN = Path(r"C:\src\b906c\strata_helper_gfx906.dll")
+ENGINE = Path(r"C:\src\b1201m\strata.exe")
+PLUGIN = Path(r"C:\src\b906m\strata_helper_gfx906.dll")
 # hipblas.dll and rocblas.dll are delay-loaded by strata.exe: without the 6.4 copies beside it the package's rocm/bin (HIP 7)
 # copies are found on PATH and a missing entry point stops the start (0xC06D007F)
 HIP64_DLLS = ["amdhip64_6.dll", "amd_comgr_2.dll", "hipblaslt.dll", "hipblas.dll", "rocblas.dll", "hiprtc0604.dll",
