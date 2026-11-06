@@ -857,6 +857,9 @@ public:
     /// With the compact copy ready: blobs read from the mapped file since (what the plain mmap mode may read from
     /// the SSD).  0 in a steady resident mode; lend-region experts that did not fit the RAM count here.
     int64_t file_reads() const { return file_reads_.load(std::memory_order_relaxed); }
+    /// strata-mi50 diagnostics: the file_reads() split by where the expert was when the start-up plan was made - [0] it was
+    /// in the GPU cache at the start (a swap moved it out), [1] on a helper card (--expert-cache-device1..3), [2] neither.
+    int64_t file_reads_kind(int k) const { return k >= 0 && k < 3 ? file_reads_kind_[k].load(std::memory_order_relaxed) : 0; }
     /// CS-T per-tier counters: blobs served from the RAM copy, and the bytes read from the mapped files (the blobs
     /// `file_reads` counts, plus the prompt path's copies of them).
     int64_t ram_reads() const { return ram_reads_.load(std::memory_order_relaxed); }
@@ -1230,6 +1233,8 @@ private:
     uint64_t xstage_blob_ = 0;
     int64_t exchanges_ = 0;
     std::atomic<int64_t> file_reads_{0};
+    std::atomic<int64_t> file_reads_kind_[3]{};   ///< see file_reads_kind()
+    std::vector<uint8_t> tier_kind_;               ///< per (layer * n_expert + expert): 0 other, 1 primary GPU, 2 helper card
     std::atomic<int64_t> reads_{0};   ///< (a counter only; two threads can read blobs at once)
 #if defined(_WIN32)
     void* file_ = nullptr;

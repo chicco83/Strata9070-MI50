@@ -3541,6 +3541,10 @@ bool FileExpertSource::pin_cache_complement(
             if (slot >= 0 && slot < n_slots) slot_bytes[(size_t) slot] = layer_blob_bytes_[(size_t) layer];
         }
     }
+    tier_kind_.assign((size_t) n_layers_ * (size_t) n_expert_, 0);   // strata-mi50 diagnostics (file_reads_kind)
+    for (const auto& pr : primary_gpu_pairs) tier_kind_[(size_t) pr.first * (size_t) n_expert_ + (size_t) pr.second] = 1;
+    for (const auto& pr : additional_gpu_pairs)
+        if (pr.first >= 0 && pr.second >= 0 && pr.first < n_layers_ && pr.second < n_expert_) tier_kind_[(size_t) pr.first * (size_t) n_expert_ + (size_t) pr.second] = 2;
     std::vector<uint64_t> offsets;
     uint64_t bytes = 0;
     if (!detail::make_cache_complement_plan(n_layers_, n_expert_, layer_blob_bytes_, primary_gpu_pairs,
@@ -4678,7 +4682,11 @@ const uint8_t* FileExpertSource::blob(int64_t layer, int64_t expert) {
 #endif
             }
         }
-        if (complement_ready_ && result != nullptr) file_reads_.fetch_add(1, std::memory_order_relaxed);
+        if (complement_ready_ && result != nullptr) {
+            file_reads_.fetch_add(1, std::memory_order_relaxed);
+            const uint8_t k = index < tier_kind_.size() ? tier_kind_[index] : 0;
+            file_reads_kind_[k == 1 ? 0 : k == 2 ? 1 : 2].fetch_add(1, std::memory_order_relaxed);
+        }
     }
     if (result != nullptr) reads_.fetch_add(1, std::memory_order_relaxed);
     return result;

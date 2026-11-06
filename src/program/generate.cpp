@@ -19582,6 +19582,8 @@ int main(int argc, char** argv) {
                                      "%.1f MB read%s\n", (long long) req_hits, (long long) src.ram_reads(),
                              (long long) src.file_reads(), (double) src.file_read_bytes() / 1e6,
                              src.gguf_mode() ? " (the GGUF in place)" : "");
+                std::fprintf(stderr, "strata serve: file blobs by where the expert was at the start: GPU cache %lld, helper card %lld, neither %lld\n",
+                             (long long) src.file_reads_kind(0), (long long) src.file_reads_kind(1), (long long) src.file_reads_kind(2));
                 // what the OS did for this request (since the previous one): the drive's share of the file tier's reads
                 // against the page cache's, and what the I/O path did about it
                 static strata::platform::ProcIo io_prev;
