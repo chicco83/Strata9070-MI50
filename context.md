@@ -1,4 +1,4 @@
-# context.md — versione 0.2.2-mi50.37 (2026-11-06 11:40)
+# context.md — versione 0.2.2-mi50.38 (2026-11-06 12:40)
 
 Fork di Strata (`chicco83/Strata9070-MI50`, branch `claude/magical-faraday-zdjhvj`) per un PC Windows 11 con RX 9070 XT (gfx1201,
 slot CPU PCIe 5.0 x16) + Radeon Pro VII / MI50 (gfx906, 16 GB, slot chipset B650 PCIe 4.0 x4, 6,6 GB/s: limite fisico),
@@ -56,6 +56,7 @@ PIANO_DUAL_GPU_2026-10-23.md.
 - HIP SDK installati: 5.7 e 6.4 in `C:\Program Files\AMD\ROCm`; `HIP_PATH` di sistema punta al 5.7.
 
 ## Prossimi passi, in ordine
+0g. **(2026-11-06 12:40)** Indagine su FUSED chiusa senza colpevole: `never rang` non riprodotto in 3 esecuzioni tracciate; le esecuzioni lente mostrano un rallentamento generale della macchina, non del kernel fuso (changelog 0.2.2-mi50.38). FUSED resta opt-in; ⏳ per decidere servono ≥10 esecuzioni alternate a macchina scarica con registro della GPU. Prossimo: fissare o no il componente dell'app sul merge v0.2.11.
 0f. **(2026-11-06 11:40)** `STRATA_PF_FUSED=1` **non** è il default (⛔ per ora): confronto alternato sul merge v0.2.11, guadagno non ripetibile e un errore `layer 0 never rang` solo con FUSED (changelog 0.2.2-mi50.37). L'helper acceso resta +5–9% in «Full performance». ⏳ Prossimo: indagare l'errore con FUSED; poi decidere se fissare il componente dell'app sul merge v0.2.11 (non provato nell'app, DFlash2 e 128K non provati).
 0e. **(2026-11-06)** Ramo allineato a upstream **v0.2.11** (merge `acc2d03a`; un solo conflitto, nelle traduzioni: le nostre 16 chiavi sono ora `s9039`..`s9054`); motore e plugin compilano, tipi e test verdi, ⏳ non provato su GPU dopo questo merge. Resta aperta la decisione su `STRATA_PF_FUSED=1` (voce 0d) e la ricostruzione del componente dell'app. Changelog 0.2.2-mi50.36.
 0d. **(2026-11-03 22:10)** Provato su GPU il merge v0.2.10: nessuna regressione; con `STRATA_PF_FUSED=1` la lettura dei prompt sale a 1.188 / 1.342 tok/s in «Full performance» (+15% / +12% sull'helper spento) e a 850 / 1.312 in «Leave 20%» nuovo (+70% / +98%), testo a posto, decode invariato (changelog 0.2.2-mi50.35). ⏳ Decidere se fissare `STRATA_PF_FUSED=1` e ricostruire il componente dell'app; ⏳ DFlash2 + plugin e contesto 128K non provati.
