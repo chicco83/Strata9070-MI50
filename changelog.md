@@ -1,4 +1,17 @@
-# changelog.md — versione 0.2.2-mi50.44 (2026-11-06 18:10)
+# changelog.md — versione 0.2.2-mi50.45 (2026-11-06 20:30)
+
+## 0.2.2-mi50.45 — 2026-11-06 20:30
+- **Correzione della misura «senza plugin» (0.2.2-mi50.41) e misura vera della MI50 sul decode.** Trappola scoperta: il server dell'app costruisce gli argomenti del motore da `args_written` + `user_args` della configurazione, oltre che da `args`; togliere `--expert-cache-plugin` e `--expert-cache-device1` solo da `args` non li toglie dal motore. Nelle prove di .41 e della prima mezz'ora di questa sessione il motore ha quindi **sempre** usato la MI50 per gli esperti (riga `helper tier CUDA1 through the plugin` e `CUDA1: … expert entries` nel registro): cambiava solo l'helper della lettura dei prompt (variabili `STRATA_PREFILL_*` tolte). La conclusione di .41 («il plugin costa 3–7% di decode») non è valida. Ora i flag si tolgono da tutte e tre le liste e si controlla che la riga `engine started` non contenga `plugin`.
+  | Profilo, prompt | Con MI50 (cache esperti + helper) | Senza MI50 (verificato nel registro) |
+  |---|---|---|
+  | «Full performance» (ctx 65536), decode codice 3 prompt | **47,4 / 50,0 / 44,5 (media 47,3)** | 30,9 / 27,3 / 29,7 (media 29,3) |
+  | «Full performance», prompt da 3.366 token: lettura / decode | 503 / 38,7 | 499 / 28,1 |
+  | «Leave 20%» (ctx 131072), decode brevi 3 prompt | 35,6 / 36,8 / 34,9 | 31,5 / 32,0 / 35,5 |
+  | «Leave 20%», prompt da 41.827 token: lettura | 888 tok/s (47,1 s) | 1.150 tok/s (36,4 s) |
+  | «Leave 20%», 41.827 token: decode | 26,8 / 30,1 | 29,0 / 31,1 |
+- **Lettura**: la MI50 come livello di esperti accelera molto il decode in «Full performance» (+61%: 47,3 contro 29,3 tok/s) e poco in «Leave 20%» (+0..+10% su prompt brevi, pari a 41K). A 41K token in «Leave 20%» la lettura senza MI50 è stata più veloce (1.150 contro 888 tok/s, una sola esecuzione ciascuna; la stessa configurazione ha variato da 669 a 888 in altre esecuzioni, quindi rumore alto): ⏳ da ripetere prima di concludere che nel profilo «Leave 20%» a contesto lungo la MI50 sottrae RAM bloccata (15,4 GiB di esperti sulla MI50 contro 28 GiB di complemento in RAM) e rallenta. Per il resto resta valido tutto ciò che non dipendeva dal confronto senza plugin (helper sulla lettura +30–36% in «Leave 20%», DFlash2 contro MTP).
+- **Sull'app dell'utente (20–27 tok/s a 25–44K token di contesto, 2026-11-06 sera)**: coerente con le misure a 41K (27–30 tok/s); non è una regressione.
+- **Rollback**: nessuno (solo misure e documenti).
 
 ## 0.2.2-mi50.44 — 2026-11-06 18:10
 - **DFlash2 contro MTP nel profilo «Full performance»** (motore `C:\src\b1201m\strata.exe` e plugin `b906m` lanciati dalle configurazioni di prova `v10-perf-new-0.66.json` = MTP e `v15-perf-df2.json` = MTP sostituito da DFlash2; contesto 65536, helper FRAC 0,66; stesso `scratchpad/dec2.py` di .43 con prompt «lungo» da 3.366 token). Velocità lette dal registro del motore (`C:\src\r9070-test\v10-perf-new-0.66.log`, aggiunto in coda dalle due esecuzioni).
@@ -39,7 +52,7 @@
   | con plugin MI50 (prima serie) | 45,8 | 37,3 | 36,0 | 34,0 | 38,3 |
   | con plugin MI50 (seconda serie) | 47,4 | 39,3 | 36,7 | 36,3 | 39,9 |
   | senza plugin né cache MI50 (`--expert-cache-plugin` e `--expert-cache-device1` tolti, nessuna variabile `STRATA_PREFILL_*`) | 48,9 | 39,5 | 38,8 | 37,8 | 41,3 |
-- **Lettura**: il decode con il plugin è circa 3–7% sotto quello senza, differenza vicina al rumore tra le due serie identiche (38,3 contro 39,9). Il decode è dominato dalla 9070; la MI50 non lo accelera e può costargli qualche punto per le attese sugli strati. La sua utilità resta la lettura dei prompt (+30–36% in «Leave 20%», changelog .32 e .37). Nessuna modifica fatta. **Non provato**: DFlash2 come drafter su HIP (qui ha girato il drafter MTP della configurazione), contesto lungo in decode (⏳ 128K), profilo «Full performance». Il confronto è di una sola sessione e di 4 prompt.
+- **⚠ SUPERATO il 2026-11-06 da 0.2.2-mi50.45: il confronto «senza plugin» di questa voce non toglieva la MI50 (solo l'helper della lettura dei prompt), la conclusione sotto non vale.** Lettura originale: il decode con il plugin è circa 3–7% sotto quello senza, differenza vicina al rumore tra le due serie identiche (38,3 contro 39,9). Il decode è dominato dalla 9070; la MI50 non lo accelera e può costargli qualche punto per le attese sugli strati. La sua utilità resta la lettura dei prompt (+30–36% in «Leave 20%», changelog .32 e .37). Nessuna modifica fatta. **Non provato**: DFlash2 come drafter su HIP (qui ha girato il drafter MTP della configurazione), contesto lungo in decode (⏳ 128K), profilo «Full performance». Il confronto è di una sola sessione e di 4 prompt.
 - **Rollback**: nessuno (solo misure e documenti).
 
 ## 0.2.2-mi50.40 — 2026-11-06 14:00
