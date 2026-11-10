@@ -3543,5 +3543,10 @@
   "s9051": "Calidad similar a IQ3_XXS con un 20 % menos de memoria gráfica. Algo más lento.",
   "s9052": "Un modelo más pequeño (35B, 3B activos). 4 bits: la más pequeña de las tres versiones.",
   "s9053": "Un modelo más pequeño (35B, 3B activos). 6 bits: más cerca del modelo completo.",
-  "s9054": "Un modelo más pequeño (35B, 3B activos). 8 bits: la más cercana al modelo completo."
+  "s9054": "Un modelo más pequeño (35B, 3B activos). 8 bits: la más cercana al modelo completo.",
+  "s9055": "Grabando el registro",
+  "s9056": "Las lecturas del Monitor se guardan una vez por segundo, en cualquier pantalla, hasta que pulses Detener.",
+  "s9057": "Registro guardado",
+  "s9058": "No se guardó el registro",
+  "s9059": "Inténtalo de nuevo."
 }

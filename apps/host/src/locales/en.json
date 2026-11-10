@@ -3543,5 +3543,10 @@
   "s9051": "About IQ3_XXS quality with about 20% less graphics memory. A little slower.",
   "s9052": "A smaller model (35B, 3B active). 4-bit: the smallest of the three versions.",
   "s9053": "A smaller model (35B, 3B active). 6-bit: closer to the full model.",
-  "s9054": "A smaller model (35B, 3B active). 8-bit: the closest to the full model."
+  "s9054": "A smaller model (35B, 3B active). 8-bit: the closest to the full model.",
+  "s9055": "Recording the log",
+  "s9056": "The Monitor readings are saved once a second, on every screen, until you press Stop.",
+  "s9057": "Log saved",
+  "s9058": "The log was not saved",
+  "s9059": "Try again."
 }

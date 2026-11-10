@@ -3,7 +3,7 @@ import { tr } from '../lib/i18n';
 import { Icon } from './ui';
 import { FloatingMenu } from './FloatingMenu';
 import { cx } from '../lib/format';
-import { versionAbout, type CatalogVersion } from '../lib/native-catalog';
+import { versionNote, type CatalogVersion } from '../lib/native-catalog';
 import { nvfp4Version } from '../lib/native-names';
 import { fitOn, recommendedVersions, versionFit, versionGroups, type CacheChoice, type FitHardware, type PcPick } from '../lib/native-fit';
 

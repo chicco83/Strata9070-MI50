@@ -3543,5 +3543,10 @@
   "s9051": "Etwa IQ3_XXS-Qualität mit etwa 20 % weniger Grafikspeicher. Etwas langsamer.",
   "s9052": "Ein kleineres Modell (35 Mrd., 3 Mrd. aktiv). 4 Bit: die kleinste der drei Versionen.",
   "s9053": "Ein kleineres Modell (35 Mrd., 3 Mrd. aktiv). 6 Bit: näher am vollen Modell.",
-  "s9054": "Ein kleineres Modell (35 Mrd., 3 Mrd. aktiv). 8 Bit: am nächsten am vollen Modell."
+  "s9054": "Ein kleineres Modell (35 Mrd., 3 Mrd. aktiv). 8 Bit: am nächsten am vollen Modell.",
+  "s9055": "Protokoll wird aufgezeichnet",
+  "s9056": "Die Monitor-Werte werden auf jedem Bildschirm einmal pro Sekunde gespeichert, bis du auf Stopp drückst.",
+  "s9057": "Protokoll gespeichert",
+  "s9058": "Das Protokoll wurde nicht gespeichert",
+  "s9059": "Versuche es erneut."
 }
