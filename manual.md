@@ -1,4 +1,6 @@
-# manual.md — versione 0.2.2-mi50.50 (2026-11-11 10:30)
+# manual.md — versione 0.2.2-mi50.51 (2026-11-11 11:25)
+
+> Novità .51: con il plugin MI50 e almeno 2500 slot di cache sulla 9070 il livello MI50 resta spento da solo (log «the MI50 helper tier is left off»); `STRATA_MI50_TIER=1` lo forza, `STRATA_MI50_TIER_MAX_SLOTS=<n>` cambia la soglia (0 = regola disattivata).
 
 Per riaprire il wizard: scrivere `/setup` nella chat (o "Run setup" nella tavolozza comandi).
 

@@ -8838,6 +8838,25 @@ int main(int argc, char** argv) {
     }
 
     std::array<strata::core::RemoteExperts, 3> remote_experts;
+    // strata-mi50 (2026-11-11): the MI50 tier only pays when the main card's expert cache is small.  Measured (changelog 0.2.2-mi50.49/.50):
+    // with ~2,800 slots (much free VRAM) decode is equal with and without it but prompt reads are 35-60% slower (its experts have no RAM
+    // copy; the prompt path fetches them over PCIe); with ~1,600 slots (a game or browser holding VRAM) it gives +61% decode.  So with the
+    // plugin tier and a cache of at least STRATA_MI50_TIER_MAX_SLOTS slots (default 2500) the tier is not opened.  STRATA_MI50_TIER=1 keeps it.
+    if (!o.expert_cache_plugin.empty() && o.expert_cache_remote[0] > 0) {
+        const char* force = std::getenv("STRATA_MI50_TIER");
+        const char* mx = std::getenv("STRATA_MI50_TIER_MAX_SLOTS");
+        const int64_t max_slots = mx != nullptr ? std::atoll(mx) : 2500;
+        if (!(force != nullptr && std::atoi(force) != 0) && max_slots > 0 && (int64_t) xcache.slots() >= max_slots) {
+            std::fprintf(stderr, "strata generate: the main card's expert cache has %lld slots (>= %lld): the MI50 helper tier is left off "
+                                 "(STRATA_MI50_TIER=1 keeps it, STRATA_MI50_TIER_MAX_SLOTS changes the limit)\n",
+                         (long long) xcache.slots(), (long long) max_slots);
+            o.expert_cache_remote[0] = 0;
+            o.remote_expert_opt = false;
+        } else {
+            std::fprintf(stderr, "strata generate: the main card's expert cache has %lld slots: the MI50 helper tier stays on\n",
+                         (long long) xcache.slots());
+        }
+    }
     std::unique_ptr<strata::core::RemoteExpertOpt> remote_opt;
     if (o.remote_expert_opt && o.expert_cache_remote[0] > 0) remote_opt = std::make_unique<strata::core::RemoteExpertOpt>();
     const bool multi_remote = o.expert_cache_remote[1] > 0 || o.expert_cache_remote[2] > 0;
