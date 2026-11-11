@@ -3642,7 +3642,9 @@ bool FileExpertSource::pin_cache_complement(
         // GiB) from the GGUF (a fresh 17K-token prompt 24 GB).  As the unbudgeted path does, take the lend region's
         // experts from the last slot down (the order the borrowing takes them) while they fit in what the budget has
         // left; the ones past it keep the file fallback, and `rank` keeps its precedence (the hottest experts first).
-        if (lend_from_slot >= 0 && lend_from_slot < n_slots && additional_gpu_pairs.empty()) {
+        // strata-mi50 (2026-11-11): also with a helper card's experts (additional_gpu_pairs): the lend region is the main card's own slots,
+        // so the helper tier does not change it; without this the prompt path re-read every lent slot's expert from the SSD on each chunk
+        if (lend_from_slot >= 0 && lend_from_slot < n_slots) {
             budget_lendable = n_slots - lend_from_slot;
             std::vector<size_t> order;   // the pairs in the lend region, highest slot first
             for (size_t i = 0; i < primary_gpu_pairs.size(); ++i)
